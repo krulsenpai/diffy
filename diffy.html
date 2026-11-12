@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Diffy 1.0.0: a private, offline, prose-aware diff tool. One file, no dependencies.
+  Diffy 1.0.1: a private, offline, prose-aware diff tool. One file, no dependencies.
   Source and newer versions: https://github.com/krulsenpai/diffy
   (Diffy cannot check for updates itself: it cannot reach the internet, by design.)
 
@@ -13,16 +13,29 @@
   run `node rehash.mjs`.
   The only thing ever stored is your settings, in this browser's localStorage.
 
-  Copyright (C) 2026 krulsenpai. License: GNU AGPL-3.0 (see LICENSE, or https://www.gnu.org/licenses/agpl-3.0.html).
+  Copyright (C) 2026 krulsenpai. License: GNU AGPL, version 3 only (AGPL-3.0-only): see LICENSE, or
+  https://www.gnu.org/licenses/agpl-3.0.html. The licence covers Diffy, not your documents: what you export is yours.
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Us0xe16m29arNzFHjq0TzUZo0CZAck/evtmjitS0yKU='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3R9wrGtQMkB//v4tAuN2J6MOqW9+Z636l60esbQkJs4='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Diffy</title>
+<title>Diffy: see what changed between two drafts, privately</title>
+<meta name="description" content="Paste two versions of a text and see every word that was added, removed, moved or quietly swapped. Free, no account, and nothing you paste leaves your computer.">
+<!-- What a link to Diffy looks like when someone shares it. These are labels for other sites to read: this page loads nothing. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Diffy">
+<meta property="og:title" content="Diffy: see what changed between two drafts, privately">
+<meta property="og:description" content="Paste two versions of a text and see every word that was added, removed, moved or quietly swapped. Free, no account, and nothing you paste leaves your computer.">
+<meta property="og:url" content="https://krulsenpai.github.io/diffy/">
+<meta property="og:image" content="https://krulsenpai.github.io/diffy/preview.png">
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1260">
+<meta property="og:image:alt" content="Diffy comparing two drafts: removed words struck through in red, added words underlined in green, and yellow dots on the edits that change the meaning.">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Crect%20width%3D%2224%22%20height%3D%2224%22%20rx%3D%226.5%22%20fill%3D%22%23C6000D%22%2F%3E%3Cpath%20d%3D%22M6.5%208h11M6.5%2012h5.4M6.5%2016h8%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%2F%3E%3Cpath%20d%3D%22M14.7%2012h2.8%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20opacity%3D%22.45%22%2F%3E%3C%2Fsvg%3E">
 <style>
 :root{
@@ -433,6 +446,7 @@ input[type=range]{accent-color:var(--accent);width:150px}
 .privpop{position:fixed;z-index:60;top:52px;right:14px;width:360px;max-width:calc(100vw - 16px);padding:16px 18px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-lg),0 0 0 .5px var(--line-2);font-size:13px;line-height:1.55;color:var(--tx-2)}
 .privpop h4{margin:0 0 8px;font:500 17px/1.3 var(--serif);color:var(--tx);display:flex;gap:8px;align-items:center}
 .privpop h4 svg.ic{color:var(--ins)}
+.privpop code{font:12px var(--mono);background:var(--bg-3);padding:1px 5px;border-radius:5px;overflow-wrap:anywhere}
 .privpop ul{margin:0;padding-left:18px}
 .privpop li{margin:4px 0}
 .toasts{position:fixed;left:0;right:0;bottom:18px;z-index:90;display:flex;flex-direction:column-reverse;align-items:center;gap:8px;padding:0 16px;pointer-events:none}
@@ -532,7 +546,7 @@ input[type=range]{accent-color:var(--accent);width:150px}
 </style>
 </head>
 <body>
-<div class="nojs" id="nojs" role="alert"><b>Diffy couldn’t start.</b> Its script was blocked or failed. If you edited it, run <code>node rehash.mjs</code> to update the script hash.</div>
+<div class="nojs" id="nojs" role="alert"><b>Diffy couldn’t start.</b> Your browser may be too old for it: update the browser and open Diffy again. (If you edited this file, run <code>node rehash.mjs</code> to update the script hash.)</div>
 <div class="app" id="app">
   <header class="top">
     <button class="brand" id="brand" title="Diffy"><i data-icon="mark"></i>Diffy</button>
@@ -587,6 +601,7 @@ input[type=range]{accent-color:var(--accent);width:150px}
         <button class="btn primary" id="compareBtn">Compare <kbd id="cmpKey">Ctrl ↵</kbd></button>
       </div>
       <p class="fine"><i data-icon="lock"></i>Everything runs in your browser. A Content-Security-Policy blocks every upload, fetch and outside script, so nothing you paste leaves this device.</p>
+      <p class="fine" id="onlineNote" hidden><span>Trying Diffy online? It is made to be downloaded once and kept on your own computer. Get the file at <b>github.com/krulsenpai/diffy/releases</b></span></p>
     </section>
 
     <section class="results" id="results" hidden>
@@ -2636,9 +2651,12 @@ return {
    ===================================================================== */
 (() => {
 'use strict';
-// The version is also written in the comment at the top of the file (the tests keep the two in step). The address is
-// shown as plain text, never as a link: nothing in Diffy leads off the page.
-const VERSION = '1.0.0', SOURCE = 'github.com/krulsenpai/diffy';
+// The version is also written in the comment at the top of the file (the tests keep the two in step).
+// Diffy is made to be downloaded once and then used for months from someone's own computer, so nothing in it is a
+// clickable link and nothing in it needs the internet: an address is always plain text to copy.
+const VERSION = '1.0.1', SOURCE = 'github.com/krulsenpai/diffy';
+const ONLINE = /^https?:$/.test(location.protocol); // opened from a website, not from a file on this computer
+const TITLE = document.title; // the page's own title, put back whenever no comparison is on screen
 const E = Engine, CATS = E.CATS, esc = E.esc, vis = E.vis;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -2894,7 +2912,7 @@ function showCompose() {
   hideCard(true); closeMenu(); closePriv(); setSheet(false, true);
   st.screen = 'compose';
   $('#results').hidden = true; $('#compose').hidden = false;
-  $('#topMid').innerHTML = ''; document.title = 'Diffy';
+  $('#topMid').innerHTML = ''; document.title = TITLE;
   updateCounts(); updateLive();
 }
 function leaveResults() { if (history.state && history.state.diffy === 'results') history.back(); else showCompose(); }
@@ -3690,7 +3708,9 @@ function openHelp() {
     '<h3>Files and exports</h3><div class="prose-sm">Drop one file on a box, or two files anywhere (the older becomes the original). Word files (<code>.docx</code>) open directly: tracked changes are read as accepted, hidden text is left out, and footnotes are numbered and listed at the end. The Export button above the text gives you the final text, a self-contained redline page and <code>CriticMarkup</code> with your decisions applied.</div>' +
     '<h3>What the categories mean</h3>' + cats('meaning') + cats('content') + cats('mech') +
     '<p class="note">Polarity, Obligation, Scope, Tone and Spelling go by English word lists. The comparison itself, and the flags for figures, links and look-alike characters, work in any language.</p>' +
-    '<h3>About</h3><div class="prose-sm">Diffy ' + VERSION + ', free software under the AGPL-3.0. Diffy can’t check for updates: it can’t reach the internet, by design. To see whether there is a newer version, visit <code>' + SOURCE + '/releases</code> yourself. The source is there too, and in this file.</div>');
+    '<h3>About</h3><div class="prose-sm">Diffy ' + VERSION + ', free software under the GNU AGPL, version 3 only. The licence covers Diffy, not your documents: what you export is yours.<br><br>' +
+    'Diffy can’t check for updates: it can’t reach the internet, by design. To see whether there is a newer version, visit <code>' + SOURCE + '/releases</code> yourself. The source is there too, and in this file.<br><br>' +
+    'Diffy is free. If it saves you time, <code>' + SOURCE + '</code> lists ways to support its development.</div>');
 }
 function togglePriv() { if (st.priv) closePriv(); else openPriv(); }
 function closePriv() { if (!st.priv) return; st.priv.remove(); st.priv = null; $('#privBtn').setAttribute('aria-expanded', 'false'); }
@@ -3702,6 +3722,8 @@ function openPriv() {
     '<li><b>Preferences only.</b> Theme, text size, view, filters and the other settings are kept in this browser’s local storage, nowhere else.</li>' +
     '<li><b>Files stay local.</b> Opened and dropped files are read on this device and never uploaded.</li>' +
     '<li><b>No update checks.</b> Diffy can’t reach the internet, so it can’t look for a newer version either. Help (?) shows the version you have and where to look.</li>' +
+    // only when Diffy is being used from a website; the address is plain text to copy, like every address in Diffy
+    (ONLINE ? '<li><b>Keep your own copy.</b> You are using Diffy online. It is made to be downloaded once and kept: get the file at <code>' + SOURCE + '/releases</code> and open it from your own computer. A copy on your own disk is one nobody else can change.</li>' : '') +
     '<li><b>Check it yourself:</b> open your browser’s DevTools, go to the Network tab and compare away. Nothing new shows up.</li></ul>';
   document.body.appendChild(p); st.priv = p; $('#privBtn').setAttribute('aria-expanded', 'true');
 }
@@ -3722,11 +3744,17 @@ function togglePanel() {
 const EX_A = 'The Lighthouse Proposal\n\nIn 2019, the town council commissioned a study of the old lighthouse on Gull Point. The report found that the structure was sound, but that repairs would cost roughly 12 percent more than the original estimate. Some members argued that the building should be sold to a private buyer. Others felt it was probably worth keeping as a museum.\n\nDr. Maria Okafor, who led the study, said the council "may want to act before winter." She did not expect the colour of the tower to change, and she noted that the lamp room had never recieved proper maintenance. The damage occured slowly over many years.\n\nThe committee will approve the funding if the community supports it. Volunteers have already offered to paint the railings. A public meeting is scheduled for March 4, and everyone is welcome to attend.\n';
 const EX_B = 'The Lighthouse Proposal\n\nIn 2019, the town council commissioned a study of the old lighthouse on Gull Point. The report found that the structure was sound, but that repairs would cost roughly 15 percent more than the original estimate. All members argued that the building should be sold to a private buyer. Others felt it was worth keeping as a museum.\n\nDr. Marta Okafor, who led the study, said the council “must act before winter.” She didn\'t expect the color of the tower to change, and she noted that the lamp room had never received proper maintenance.\n\nThe damage occurred slowly, over many years, and was largely invisible from the shore.\n\nA public meeting is scheduled for March 14, and everyone is welcome to attend. The committee will not approve the funding unless the community supports it. Volunteers have already offered to paint the railings.\n';
 
+function loadExample() {
+  const snap = snapshot();
+  setText('a', EX_A, 'Lighthouse · draft 1'); setText('b', EX_B, 'Lighthouse · draft 2');
+  replaced(snap, 'Loaded the example.'); compareNow();
+}
+
 /* ---------- wiring ---------- */
 function wire() {
   ta.addEventListener('input', textChanged); tb.addEventListener('input', textChanged);
   $('#compareBtn').addEventListener('click', compareNow);
-  $('#exampleBtn').addEventListener('click', () => { const snap = snapshot(); setText('a', EX_A, 'Lighthouse · draft 1'); setText('b', EX_B, 'Lighthouse · draft 2'); replaced(snap, 'Loaded the example.'); compareNow(); });
+  $('#exampleBtn').addEventListener('click', loadExample);
   $('#swapBtn').addEventListener('click', () => {
     const a = ta.value; ta.value = tb.value; tb.value = a;
     st.names = { a: st.names.b, b: st.names.a }; st.loaded = { a: st.loaded.b, b: st.loaded.a };
@@ -3981,6 +4009,10 @@ applyTheme(); applyType();
 if (isMac) $('#cmpKey').textContent = '⌘ ↵';
 wire();
 try { history.replaceState({ diffy: 'compose' }, ''); } catch (e) { /* sandboxed: fine */ }
+// An address ending in "#example" opens straight onto the built-in example. (The part after # stays in the browser:
+// it is never sent to a server.)
+if (location.hash === '#example') loadExample();
+if (ONLINE) $('#onlineNote').hidden = false; // a copy opened from a file never shows this
 updateCounts();
 $('#nojs').remove();
 })();

@@ -1,6 +1,3 @@
 # Every new issue goes through one of the two forms, so everyone sees the warning about confidential text.
+# (GitHub adds its own "Report a security vulnerability" entry to that list, which leads to the private form.)
 blank_issues_enabled: false
-contact_links:
-  - name: Report a security problem privately
-    url: https://github.com/krulsenpai/diffy/security/advisories/new
-    about: Found a way to make Diffy leak text? Don't post it here. This form is private.

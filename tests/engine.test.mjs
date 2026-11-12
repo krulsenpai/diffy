@@ -2,7 +2,10 @@
 // No dependencies and no browser. After editing the script in diffy.html, run node rehash.mjs first.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { html, script, cspHash, scriptHash, Engine as E, EX_A, EX_B, random } from './diffy.mjs';
+
+const file = name => readFileSync(new URL('../' + name, import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 
 const acceptAll = M => E.merge(M, () => true, true);
 const rejectAll = M => E.merge(M, () => false, false);
@@ -20,6 +23,28 @@ test('the version in the comment at the top of the file is the one the app shows
   const inScript = /const VERSION = '(\d+\.\d+\.\d+)'/.exec(script), inComment = /^<!doctype html>\n<!--\n\s*Diffy (\d+\.\d+\.\d+):/.exec(html);
   assert.ok(inScript && inComment, 'a version like 1.2.3 in both places');
   assert.equal(inComment[1], inScript[1]);
+});
+
+test('the changelog has an entry for this version, which becomes the release notes', () => {
+  const version = /const VERSION = '([^']+)'/.exec(script)[1];
+  const entry = new RegExp('^## ' + version.replace(/\./g, '\\.') + '\\n+([^#]+)', 'm').exec(file('CHANGELOG.md'));
+  assert.ok(entry && entry[1].trim().length > 20, 'CHANGELOG.md needs a "## ' + version + '" section that says what changed');
+});
+
+test('the page people share and the app describe themselves the same way', () => {
+  // index.html is the address that gets shared; a link preview is drawn from these labels
+  const labels = page => ['<title>([^<]+)</title>', 'name="description" content="([^"]+)"', 'property="og:title" content="([^"]+)"', 'property="og:description" content="([^"]+)"', 'property="og:image" content="([^"]+)"']
+    .map(re => (new RegExp(re).exec(page) || [])[1]);
+  const app = labels(html), front = labels(file('index.html'));
+  assert.ok(app.every(Boolean), 'diffy.html has a title, a description and a picture for link previews');
+  assert.deepEqual(front, app);
+  assert.equal(app[0], app[2]); assert.equal(app[1], app[3]);
+});
+
+test('nothing in the app is a clickable link', () => {
+  // an address in Diffy is plain text to copy; this covers the page and every piece of HTML the script builds
+  assert.equal((html.match(/<a[\s>]/gi) || []).length, 0, 'no <a> element anywhere in diffy.html');
+  assert.ok(!/window\.open|location\.(?:href|assign|replace)\s*[=(]/.test(script), 'no code that navigates');
 });
 
 test('printing uses the light palette whatever the theme', () => {

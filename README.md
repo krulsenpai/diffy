@@ -4,7 +4,7 @@
 
 ![Diffy comparing two drafts of a text. Removed words are struck through in red, added words are underlined in green, moved sentences are blue, and yellow dots mark the edits that change the meaning.](screenshot.png)
 
-**[Open Diffy](https://krulsenpai.github.io/diffy/)** in your browser, or [download it](https://github.com/krulsenpai/diffy/releases/latest/download/diffy.html) to keep.
+**[Open Diffy](https://krulsenpai.github.io/diffy/)** in your browser, [see it at work on an example](https://krulsenpai.github.io/diffy/diffy.html#example), or [download it](https://github.com/krulsenpai/diffy/releases/latest/download/diffy.html) to keep.
 
 Paste two versions of a text. Diffy shows you every word that was added, removed, moved or quietly swapped, and points at the edits that change what the text says.
 
@@ -43,7 +43,7 @@ Diffy never receives your text in the first place. All the work happens on your 
 
 Go through the changes one at a time and accept or reject each, the way you would with tracked changes in Word. A yellow dot marks a change that can alter the meaning. When you are done, open **Final** to copy or download the finished text.
 
-Just curious? Press **Try an example** on the first screen.
+Just curious? [Open the built-in example](https://krulsenpai.github.io/diffy/diffy.html#example), or press **Try an example** on the first screen.
 
 If you like the keyboard: `J` `K` move between changes · `A` `R` accept or reject · `F` next flag · `G` other end of a move · `1` `2` `3` switch views · `?` everything else
 
@@ -58,11 +58,11 @@ Yes, and you can check without taking anyone's word for it.
 
 ## Keep your own copy
 
-[Download `diffy.html`](https://github.com/krulsenpai/diffy/releases/latest/download/diffy.html), save it anywhere, and double-click it. It opens in your browser like a web page, with or without internet. That one file is the whole program.
+Diffy is made to be downloaded once and kept, like a document on your desktop. [Download `diffy.html`](https://github.com/krulsenpai/diffy/releases/latest/download/diffy.html), save it anywhere, and double-click it. It opens in your browser like a web page, with or without internet. That one file is the whole program, and it will keep working for as long as you keep it.
 
 For anything sensitive, use your own copy. The online one is the same file, but a copy on your own disk is the one version nobody else can change.
 
-Diffy cannot check for updates, because it cannot reach the internet. Press `?` inside Diffy to see which version you have, and look at the [releases](https://github.com/krulsenpai/diffy/releases) for a newer one.
+Diffy cannot check for updates, because it cannot reach the internet. Press `?` inside Diffy to see which version you have, and look at the [releases](https://github.com/krulsenpai/diffy/releases) for a newer one. [What's new](CHANGELOG.md) lists what changed in each.
 
 ## Good to know
 
@@ -79,6 +79,13 @@ Diffy cannot check for updates, because it cannot reach the internet. Press `?` 
 That page is public, so **never paste a real document into it**. Diffy keeps your text private; a bug report shouldn't undo that. Make up a sentence that shows the problem, or use the built-in example, and describe the rest in words.
 
 If you have found a way to make Diffy leak text, don't post it publicly at all: [report it privately](SECURITY.md).
+
+## Support Diffy
+
+Diffy is free and stays free. It has no ads, no account and no tracking, so it has no income either. If it saves you time, you will soon be able to support its development:
+
+- **GitHub Sponsors:** coming soon.
+- **Buy Me a Coffee:** coming soon.
 
 ---
 

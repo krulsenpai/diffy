@@ -1,4 +1,5 @@
-# Pushing a tag like v1.0.0 runs the tests, then publishes diffy.html and its SHA-256 as a GitHub release.
+# Pushing a tag like v1.0.0 runs the tests, then publishes diffy.html and its SHA-256 as a GitHub release,
+# with that version's section of CHANGELOG.md as the release notes.
 # The README's download link and "check your copy" step both point at what this produces.
 name: Release
 on:
@@ -22,5 +23,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           sha256sum diffy.html > diffy.html.sha256
-          printf 'SHA-256 of `diffy.html`:\n\n```\n%s\n```\n' "$(cut -d' ' -f1 diffy.html.sha256)" > notes.md
+          # The release notes: this version's section of CHANGELOG.md, then the checksum.
+          awk -v v="${GITHUB_REF_NAME#v}" '$0 == "## " v { on = 1; next } /^## / { on = 0 } on' CHANGELOG.md > notes.md || true
+          printf '\nSHA-256 of `diffy.html`:\n\n```\n%s\n```\n' "$(cut -d' ' -f1 diffy.html.sha256)" >> notes.md
           gh release create "$GITHUB_REF_NAME" diffy.html diffy.html.sha256 --title "Diffy ${GITHUB_REF_NAME#v}" --notes-file notes.md
