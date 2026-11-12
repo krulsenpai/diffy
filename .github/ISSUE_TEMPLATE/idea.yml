@@ -1,0 +1,23 @@
+name: Suggest something
+description: A feature, a file format, a language, or anything that would make Diffy more useful to you.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## This page is public. Do not paste confidential text here.
+
+        If an example helps, make one up.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like Diffy to do?
+      description: And what are you comparing when you wish it did? A contract, a manuscript, a translation, a thesis...
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before you post
+      options:
+        - label: Nothing in this post is confidential or copied from a private document.
+          required: true

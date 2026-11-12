@@ -1,0 +1,15 @@
+# Runs the tests on every push to main and on every pull request, so a change that breaks Diffy
+# (or leaves the script's hash out of date, which stops the page from starting) shows up at once.
+name: Tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: node --test tests/*.test.mjs

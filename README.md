@@ -72,6 +72,14 @@ Diffy cannot check for updates, because it cannot reach the internet. Press `?` 
 - **A flag is a hint, not a verdict.** The yellow dots point at the edits most likely to matter, but an edit without a dot can still matter. For anything important, read every change. Out of the box Diffy tucks away pure spacing and quote-style changes; **All** brings them back.
 - **Your browser.** Diffy needs a reasonably recent browser. If yours has not been updated in a couple of years, update it first.
 
+## Found a problem, or missing something?
+
+[Report it here](https://github.com/krulsenpai/diffy/issues/new/choose). You need a free GitHub account.
+
+That page is public, so **never paste a real document into it**. Diffy keeps your text private; a bug report shouldn't undo that. Make up a sentence that shows the problem, or use the built-in example, and describe the rest in words.
+
+If you have found a way to make Diffy leak text, don't post it publicly at all: [report it privately](SECURITY.md).
+
 ---
 
 ## For the technically minded
@@ -127,6 +135,8 @@ The tests check, among other things, that accepting or rejecting every change gi
 
 ## License
 
-[AGPL-3.0](LICENSE). Copyright (C) 2026 krulsenpai.
+[GNU AGPL, version 3 only](LICENSE) (`AGPL-3.0-only`). Copyright (C) 2026 krulsenpai.
 
 Use it, fork it, host it. If you host a modified Diffy for other people, you share your source with them. If that sounds strict, scroll back up.
+
+**What you make with Diffy is yours.** The licence covers Diffy, not your documents. The final text, the redline page and every other file Diffy exports belong to you. A redline page carries a little of Diffy's styling so that it looks right; you may use, copy and share that styling without any conditions.

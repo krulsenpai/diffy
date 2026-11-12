@@ -1,0 +1,38 @@
+name: Report a problem
+description: Something in Diffy went wrong or looks wrong.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## This page is public. Do not paste confidential text here.
+
+        Diffy never sees your documents, so the only way they can leak is if someone posts them. If the problem only shows up with a private text, make up a sentence that shows it, or use **Try an example**, and describe the rest in words.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: texts
+    attributes:
+      label: A made-up text that shows it
+      description: Optional. The shortest Original and Revised you can invent that still show the problem. Never a real document.
+  - type: input
+    id: version
+    attributes:
+      label: Diffy version
+      description: 'Press ? in Diffy and look under "About".'
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: "Firefox on Windows, Safari on an iPhone, ..."
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before you post
+      options:
+        - label: Nothing in this report is confidential or copied from a private document.
+          required: true
