@@ -1,0 +1,2 @@
+# One line-ending style everywhere, so a Windows checkout is byte-for-byte what GitHub Pages serves.
+* text=auto eol=lf

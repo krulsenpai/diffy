@@ -1,0 +1,26 @@
+# Pushing a tag like v1.0.0 runs the tests, then publishes diffy.html and its SHA-256 as a GitHub release.
+# The README's download link and "check your copy" step both point at what this produces.
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: The tag matches the version written in diffy.html
+        run: |
+          v=$(grep -oP "const VERSION = '\K[^']+" diffy.html)
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "The tag is $GITHUB_REF_NAME, but diffy.html says $v"; exit 1; }
+      - name: Tests
+        run: node --test tests/*.test.mjs
+      - name: Publish diffy.html with its checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha256sum diffy.html > diffy.html.sha256
+          printf 'SHA-256 of `diffy.html`:\n\n```\n%s\n```\n' "$(cut -d' ' -f1 diffy.html.sha256)" > notes.md
+          gh release create "$GITHUB_REF_NAME" diffy.html diffy.html.sha256 --title "Diffy ${GITHUB_REF_NAME#v}" --notes-file notes.md
