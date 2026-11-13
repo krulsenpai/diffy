@@ -58,10 +58,13 @@ test('printing uses the light palette whatever the theme', () => {
 
 test('the built-in example is classified as expected', () => {
   const M = E.compare(EX_A, EX_B, {});
+  // "The damage occured…" stays where it was: its paragraph is split in front of it and the sentence is edited.
+  // (It was once read as moved, because paragraph breaks were lined up by position.) "A public meeting…" does move.
   assert.deepEqual(labels(M), [
     'Reworded [number]', 'Reworded [scope]', 'Removed [tone]', 'Look-alike word [name, lookalike]', 'Quote style',
     'Reworded [modal]', 'Quote style', 'Contraction', 'UK/US spelling', 'Spelling',
-    'Sentence moved & edited [scope]', 'Sentence moved & edited [number]', 'Added [polarity]', 'Reworded [polarity]',
+    'Paragraph split', 'Spelling', 'Punctuation added', 'Added [scope]',
+    'Sentence moved & edited [number]', 'Added [polarity]', 'Reworded [polarity]',
   ]);
   assert.equal(M.stats.wordsA, 141);
   assert.equal(M.stats.wordsB, 145);
@@ -172,12 +175,14 @@ const moveTags = html => [...html.matchAll(/<span class="mvtag[^"]*" data-goto="
 const arrowsById = tags => { const by = new Map(); for (const t of tags) by.set(t.id, (by.get(t.id) || '') + t.arrow); return by; };
 
 test('the arrows on a move point at each other, whichever way the text moved', () => {
-  const M = E.compare(EX_A, EX_B, {}); // "The damage occurred…" moves down, "A public meeting…" moves up
-  assert.deepEqual(M.hunks.filter(h => h.kind === 'move').map(h => h.down), [true, false]);
-  // inline: reading from the top, the first tag of a move points down at the second, which points back up
-  assert.deepEqual([...arrowsById(moveTags(E.renderUnified(M, {}))).values()], ['↓↑', '↓↑']);
-  // side by side: the original column holds the old place, which is above the new one only when the text moved down
-  for (const t of moveTags(E.renderSplit(M, {}))) assert.equal(t.arrow, (t.to === 'dst') === M.hunks[t.id].down ? '↓' : '↑', 'move ' + t.id + ', tag leading to ' + t.to);
+  const [, a, b] = PAIRS.find(p => p[0] === 'paragraph moved'); // "Bravo…" moves down; in the example "A public meeting…" moves up
+  for (const [M, down] of [[E.compare(a, b, {}), true], [E.compare(EX_A, EX_B, {}), false]]) {
+    assert.deepEqual(M.hunks.filter(h => h.kind === 'move').map(h => h.down), [down]);
+    // inline: reading from the top, the first tag of a move points down at the second, which points back up
+    assert.deepEqual([...arrowsById(moveTags(E.renderUnified(M, {}))).values()], ['↓↑']);
+    // side by side: the original column holds the old place, which is above the new one only when the text moved down
+    for (const t of moveTags(E.renderSplit(M, {}))) assert.equal(t.arrow, (t.to === 'dst') === M.hunks[t.id].down ? '↓' : '↑', 'move ' + t.id + ', tag leading to ' + t.to);
+  }
 });
 
 test('move arrows stay consistent on random edits', () => {
@@ -189,12 +194,14 @@ test('move arrows stay consistent on random edits', () => {
     // every move has a tag at both ends, even when one end starts right after a paragraph break
     for (const h of M.hunks) if (h.kind === 'move') { moves++; assert.equal(by.get(h.id), '↓↑', 'run ' + run + ', move ' + h.id); }
   }
-  assert.ok(moves > 50, 'the random edits should produce moves to check (got ' + moves + ')');
+  assert.ok(moves > 25, 'the random edits should produce moves to check (got ' + moves + ')');
 });
 
 test('a snippet never starts or ends with a paragraph mark', () => {
-  const M = E.compare(EX_A, EX_B, {}), first = M.hunks.find(h => h.kind === 'move');
-  assert.equal(E.textOf(M.B, first.b, 0), 'The damage occurred slowly, over many years, and was largely invisible from the shore.');
+  // a paragraph moved to the end takes the break in front of it along: the break is not part of what the snippet shows
+  const [, pa, pb] = PAIRS.find(p => p[0] === 'paragraph moved'), M = E.compare(pa, pb, {}), first = M.hunks.find(h => h.kind === 'move');
+  assert.ok(first.b.some(t => M.B.toks[t].kind === E.K.PB), 'the move holds a paragraph break');
+  assert.equal(E.textOf(M.B, first.b, 0), 'Bravo paragraph will travel down.');
   const rnd = random(31337);
   let inner = 0;
   for (let run = 0; run < 800; run++) {
@@ -246,9 +253,68 @@ test('a change that only removes or only adds words says so in its class', () =>
 test('side by side: a row with no change showing is marked as the same on both sides', () => {
   const M = E.compare(EX_A, EX_B, {});
   const rows = html => [...html.matchAll(/<div class="(row[^"]*)">/g)].map(m => m[1]);
-  assert.deepEqual(rows(E.renderSplit(M, {})), ['row same', 'row', 'row', 'row gap', 'row']);
+  assert.deepEqual(rows(E.renderSplit(M, {})), ['row same', 'row', 'row', 'row']);
   // with every change filtered out, every row is the same
-  assert.deepEqual(new Set(rows(E.renderSplit(M, { cls: () => ' off' }))), new Set(['row same', 'row gap same']));
+  assert.deepEqual(new Set(rows(E.renderSplit(M, { cls: () => ' off' }))), new Set(['row same']));
+  // a paragraph that exists on one side only gets a row of its own, with a gap on the other side
+  const added = E.compare('One stays.\n\nTwo stays.\n', 'One stays.\n\nA new paragraph arrives here.\n\nTwo stays.\n', {});
+  assert.deepEqual(rows(E.renderSplit(added, {})), ['row same', 'row gap', 'row same']);
+  assert.deepEqual(new Set(rows(E.renderSplit(added, { cls: () => ' off' }))), new Set(['row same', 'row gap same']));
+});
+
+/* ---------- where a change is marked, and where its flag dot goes ---------- */
+// The first mark of a change carries the class h0: the flag dot is drawn in front of it, and the minimap and the
+// keyboard go there. A mark is blank when it holds nothing, or nothing but a space.
+const marks = html => [...html.matchAll(/<span class="h ([^"]*)" data-h="(\d+)">((?:<(del|ins) class="[di] s">\s*<\/\4>)*<\/span>)?/g)]
+  .map(m => ({ id: +m[2], first: /\bh0\b/.test(m[1]), flagged: /\bfl\b/.test(m[1]), blank: m[3] !== undefined }));
+const columns = html => { const c = { a: '', b: '' }; for (const m of html.matchAll(/<div class="cell (a|b)[^"]*">([\s\S]*?)<\/div>/g)) c[m[1]] += m[2]; return c; };
+// ends: how many ends of a move the view shows. Inline shows both, and each has a first mark; a column shows one.
+function checkMarks(M, list, where, ends) {
+  const firsts = new Map();
+  for (const m of list) {
+    if (!firsts.has(m.id)) { assert.ok(m.first, where + ': change ' + m.id + ' has marks before its first one'); firsts.set(m.id, 0); }
+    if (m.first) firsts.set(m.id, firsts.get(m.id) + 1);
+    assert.ok(!(m.first && m.blank), where + ': change ' + m.id + ' starts with a mark that holds no words');
+  }
+  for (const [id, n] of firsts) assert.equal(n, M.hunks[id].kind === 'move' ? ends : 1, where + ': first marks of change ' + id);
+}
+
+test('side by side: each column puts the flag dot on the first words of a change', () => {
+  const M = E.compare(EX_A, EX_B, {}), col = columns(E.renderSplit(M, {}));
+  const dots = html => marks(html).filter(m => m.first && m.flagged).map(m => label(M.hunks[m.id]));
+  const flagged = M.order.map(id => M.hunks[id]).filter(h => h.flags.length);
+  // a flagged change has a dot in each column where it has words: "probably" was only removed and "not" only added,
+  // so each of those has one dot, and the others have two
+  assert.deepEqual(dots(col.a).sort(), flagged.filter(h => h.a.length).map(label).sort());
+  assert.deepEqual(dots(col.b).sort(), flagged.filter(h => h.b.length).map(label).sort());
+  assert.ok(!dots(col.a).includes('Added [polarity]') && !dots(col.b).includes('Removed [tone]') && dots(col.b).includes('Reworded [number]'));
+  // the dot of the moved "A public meeting…" once sat in front of "The committee will approve", which hadn't changed
+  assert.ok(!marks(col.a).some(m => m.blank) && !marks(col.b).some(m => m.blank), 'no mark without words');
+  assert.match(col.a, /<p[^>]*>The committee will approve/);
+});
+
+test('inline: a flagged move has its dot at the new place as well as the old one', () => {
+  const M = E.compare(EX_A, EX_B, {}), html = E.renderUnified(M, {});
+  for (const h of M.hunks.filter(h => h.kind === 'move')) {
+    const firsts = [...html.matchAll(new RegExp('<span class="h [^"]*\\bfl\\b[^"]*\\bh0\\b[^"]*" data-h="' + h.id + '"><span class="mvtag (d|i)"', 'g'))].map(m => m[1]);
+    assert.deepEqual(firsts.sort(), ['d', 'i'], label(h));
+  }
+  // the space in front of a move stays outside its mark, so the dot and the tag don't sit against the sentence before
+  assert.match(html, /paint the railings\. <span class="h [^"]*\bmv\b[^"]*\bh0\b/);
+  // and a respelled word keeps the space before it outside its mark too
+  assert.match(html, /expect the <span class="h c-spelling [^"]*"[^>]*><del class="d">colo<\/del>/);
+});
+
+test('a change is first marked where its words are, in every view, on random edits', () => {
+  const rnd = random(2024);
+  for (let run = 0; run < 1000; run++) {
+    const { a, b, opt } = randomPair(rnd), M = E.compare(a, b, opt), col = columns(E.renderSplit(M, { markup: true }));
+    checkMarks(M, marks(E.renderUnified(M, { markup: true })), 'run ' + run + ', inline', 2);
+    for (const side of ['a', 'b']) {
+      checkMarks(M, marks(col[side]), 'run ' + run + ', side by side, column ' + side, 1);
+      assert.ok(!marks(col[side]).some(m => m.blank), 'run ' + run + ', side by side, column ' + side + ': a mark without words');
+    }
+  }
 });
 
 /* ---------- reading the edits: what gets flagged, and what it is called ---------- */
@@ -315,6 +381,132 @@ test('a sentence replaced word for word is called rewritten', () => {
   assert.ok(!read('Yes, we agree.', 'No, we refuse.').some(l => l.startsWith('Sentence rewritten')), 'a three-word sentence is not a rewrite');
 });
 
-test('reordered list items are moves, not rewrites', () => {
-  assert.deepEqual(read('1. Wash the rice.\n2. Boil the water.\n3. Add salt.', '1. Wash the rice.\n2. Add salt.\n3. Boil the water.'), ['Paragraph moved & edited', 'Paragraph moved & edited']);
+test('a reordered list item is a move, and the new numbers are numbering', () => {
+  // one item changed places; the other stayed and was renumbered. A moved item's own new number is not an edit to it.
+  assert.deepEqual(read('1. Wash the rice.\n2. Boil the water.\n3. Add salt.', '1. Wash the rice.\n2. Add salt.\n3. Boil the water.'), ['Paragraph moved', 'Numbering']);
+});
+
+/* ---------- lining up: which sentence is compared with which ---------- */
+test('a paragraph added among edited paragraphs does not shift the ones after it', () => {
+  // paragraph breaks used to be lined up by position: every paragraph after the new one was compared with the wrong
+  // one, or reported as moved
+  assert.deepEqual(read(
+    'Alpha project starts in spring and needs two engineers.\n\nBravo project is on hold until the budget is approved.\n\nCharlie project ships next week to the first customer.',
+    'Zulu project was added after the last review meeting.\n\nAlpha project starts in summer and needs two engineers.\n\nBravo project is on hold until the new budget is approved.\n\nCharlie project ships next week to the first buyer.'),
+  ['Paragraph added', 'Reworded', 'Added', 'Reworded']);
+});
+
+test('a sentence whose words were only respelled is not rewritten', () => {
+  // few whole words are shared, so the sentences are matched by their letters; each fix is then a change of its own
+  const us = read('The organisation analysed the colour of the programme. The centre recognised the defence of the labour council.',
+    'The organization analyzed the color of the program. The center recognized the defense of the labor council.');
+  assert.deepEqual(us, Array(8).fill('UK/US spelling'));
+  assert.deepEqual(read('The comittee recieved it on Wendesday. Its definately a seperate enviroment.', 'The committee received it on Wednesday. It\'s definitely a separate environment.'),
+    ['Spelling', 'Spelling', 'Spelling', 'Commonly confused', 'Spelling', 'Spelling', 'Spelling']);
+  // a sentence that really was rewritten still is, and a reworded phrase is not cut up into look-alike pairs
+  assert.deepEqual(read('Our team worked hard to finish the project before the deadline despite many setbacks.',
+    'Despite numerous obstacles, the project was completed on schedule thanks to the team\'s dedication.'), ['Sentence rewritten [scope]']);
+  assert.deepEqual(read('We need to make it work today.', 'We need to take it away today.'), ['Reworded']);
+});
+
+/* ---------- clause and list numbers ---------- */
+const CLAUSES = ['The Supplier shall deliver the Goods.', 'Risk passes to the Buyer on delivery.', 'Title passes to the Buyer on payment.', 'The Buyer shall inspect the Goods.'];
+const numbered = (list, fmt) => list.map((s, i) => fmt(i + 1) + ' ' + s).join('\n\n');
+const withNew = CLAUSES.slice(0, 1).concat('The Supplier shall give notice of each delivery.', CLAUSES.slice(1));
+
+test('a clause added to a numbered text is one addition and one renumbering', () => {
+  const styles = [n => '3.' + n, n => n + '.', n => n + ')', n => '(' + 'abcdefg'[n - 1] + ')', n => '(' + ['i', 'ii', 'iii', 'iv', 'v'][n - 1] + ')', n => 'Article ' + n + '.', n => '§ ' + n];
+  for (const fmt of styles) for (const markdown of [true, false]) {
+    const M = E.compare(numbered(CLAUSES, fmt) + '\n', numbered(withNew, fmt) + '\n', { markdown }), where = fmt(2) + (markdown ? '' : ', Markdown off');
+    assert.deepEqual(labels(M), ['Paragraph added', 'Numbering'], where);
+    const h = M.hunks[M.order[1]];
+    assert.equal(h.places, 3, where + ': the three clauses after the new one');
+    assert.deepEqual([h.tier, h.flags.length], ['mech', 0], where + ': never a changed figure');
+    assert.equal(acceptAll(M), numbered(withNew, fmt) + '\n', where);
+    assert.equal(rejectAll(M), numbered(CLAUSES, fmt) + '\n', where);
+    // taking the new clause while leaving the old numbers is possible, and gives what it says
+    assert.equal(E.merge(M, x => x !== h, false), numbered(withNew, fmt).replace(fmt(3), fmt(2)).replace(fmt(4), fmt(3)).replace(fmt(5), fmt(4)) + '\n', where);
+  }
+});
+
+test('a figure is not taken for a clause number', () => {
+  // a reference in the text, a figure a paragraph opens with, and a decimal that only looks like "3.5"
+  assert.deepEqual(read('The fee in clause 4.2 applies. See Section 8 and Schedule 1.', 'The fee in clause 4.3 applies. See Section 9 and Schedule 2.'),
+    ['Reworded [number]', 'Reworded [number]', 'Reworded [number]']);
+  assert.deepEqual(read('12 members voted for the motion.\n\n30 days later it passed.', '15 members voted for the motion.\n\n60 days later it passed.'), ['Reworded [number]', 'Reworded [number]']);
+  assert.deepEqual(read('3.5 million people live here.\n\n3.6 million live there.', '3.6 million people live here.\n\n3.7 million live there.'), ['Reworded [number]', 'Reworded [number]']);
+  // one numbered paragraph alone is not a list
+  assert.deepEqual(read('3.1 The Supplier shall deliver the Goods.', '4.1 The Supplier shall deliver the Goods.'), ['Reworded [number]']);
+});
+
+test('a long numbered text with one clause added stays two changes', () => {
+  const list = Array.from({ length: 60 }, (_, i) => 'Clause about item ' + (i * 7 % 13) + ' and matter ' + i + ' stays as it was.');
+  const longer = list.slice(0, 4).concat('A new clause goes in here.', list.slice(4));
+  const M = E.compare(numbered(list, n => n + '.') + '\n', numbered(longer, n => n + '.') + '\n', {});
+  assert.deepEqual(labels(M), ['Paragraph added', 'Numbering']);
+  assert.equal(M.hunks[M.order[1]].places, 56);
+});
+
+/* ---------- changes that are easy to miss ---------- */
+test('two names or two figures that change places are flagged', () => {
+  const swap = (a, b) => { const M = E.compare(a + '\n', b + '\n', {}), h = M.hunks[M.order[0]]; return [label(h), h.finfo.map(f => f[1]).join(' | ')]; };
+  assert.deepEqual(swap('The Seller shall indemnify the Buyer against all losses.', 'The Buyer shall indemnify the Seller against all losses.'),
+    ['Word order [name]', 'Changed places: “Seller”, “Buyer” → “Buyer”, “Seller”']);
+  assert.deepEqual(swap('John owes Mary 50 dollars.', 'Mary owes John 50 dollars.'), ['Word order [name]', 'Changed places: “John”, “Mary” → “Mary”, “John”']);
+  assert.deepEqual(swap('The buyer pays 5 on day 10.', 'The buyer pays 10 on day 5.'), ['Word order [number]', 'Changed places: “5”, “10” → “10”, “5”']);
+  // a clause that moved inside its sentence is still only a change of word order
+  assert.deepEqual(read('On Monday, the board approved the budget in London.', 'The board approved the budget in London on Monday.'), ['Word order', 'Capitalization']);
+  assert.deepEqual(read('In 2019, sales were 5 million.', 'Sales were 5 million in 2019.'), ['Word order', 'Capitalization']);
+});
+
+test('units written out, and the period of a rate, belong to the figure', () => {
+  assert.deepEqual(read('The pipe is 10 miles long and 5 inches wide.', 'The pipe is 10 meters long and 5 feet wide.'), ['Reworded [number]', 'Reworded [number]']);
+  assert.deepEqual(read('Interest accrues at 5% per annum. The fee is 200 dollars per hour.', 'Interest accrues at 5% per month. The fee is 200 dollars per day.'), ['Reworded [number]', 'Reworded [number]']);
+  assert.deepEqual(read('Damages are 500 per day.', 'Damages are 500 per week.'), ['Reworded [number]']);
+  // the same length, weight or share written another way
+  assert.deepEqual(read('It is 10 km away.', 'It is 10 kilometres away.'), ['Number format']);
+  assert.deepEqual(read('It rose by 10 per cent.', 'It rose by 10%.'), ['Number format']);
+  assert.deepEqual(read('Interest is 5% per annum.', 'Interest is 5% per year.'), ['Number format']);
+});
+
+test('"and" put where "or" was is flagged', () => {
+  assert.deepEqual(read('The Landlord and the Agent must approve it.', 'The Landlord or the Agent must approve it.'), ['Reworded [scope]']);
+  assert.deepEqual(read('Bring cash or a card.', 'Bring cash and a card.'), ['Reworded [scope]']);
+  // a list that only got longer or shorter is not
+  assert.deepEqual(read('Rent includes water, heating and electricity.', 'Rent includes water and heating.'), ['Reworded']);
+});
+
+/* ---------- changes that only look like something ---------- */
+test('a figure that changed is never a spelling fix', () => {
+  // "10,000" and "100,000" are one doubled character apart, which is what a typo looks like
+  assert.deepEqual(read('The fee is 10,000 a month.', 'The fee is 100,000 a month.'), ['Reworded [number]']);
+  assert.deepEqual(read('Add 100 ml of water.', 'Add 1000 ml of water.'), ['Reworded [number]']);
+  assert.deepEqual(read('It took 11 days.', 'It took 111 days.'), ['Reworded [number]']);
+});
+
+test('the same figures set another way are not a changed number', () => {
+  assert.deepEqual(read('Call +1 (555) 010-9999 today.', 'Call +1 555 010 9999 today.'), ['Brackets removed', 'Punctuation removed']);
+  assert.deepEqual(read('We meet at 9am.', 'We meet at 9 am.'), ['Number format']);
+  assert.deepEqual(read('Take 500mg daily.', 'Take 500 mg daily.'), ['Number format']);
+  // but one digit of it changed is
+  assert.deepEqual(read('Call +1 (555) 010-9999 today.', 'Call +1 (555) 010-9998 today.'), ['Reworded [number]']);
+  assert.deepEqual(read('Take 500mg daily.', 'Take 500kg daily.'), ['Reworded [number]']);
+});
+
+test('a word put right is the same word, whatever list its right spelling is on', () => {
+  assert.deepEqual(read('You shoudl sign here.', 'You should sign here.'), ['Spelling']);            // "should" is an obligation word
+  assert.deepEqual(read('It is definately true.', 'It is definitely true.'), ['Spelling']);        // "definitely" a tone word
+  assert.deepEqual(read('See you on Wendesday.', 'See you on Wednesday.'), ['Spelling']);          // "Wednesday" a date
+  assert.deepEqual(read('See you tomorow.', 'See you tomorrow.'), ['Spelling']);
+  assert.deepEqual(read('He dont know.', 'He doesn\'t know.'), ['Word form']);                      // no negation was added
+  assert.deepEqual(read('He don\'t know.', 'He doesn\'t know.'), ['Word form']);
+  // another day, or another word that only looks like this one, is still flagged
+  assert.deepEqual(read('See you on Tuesday.', 'See you on Thursday.'), ['Reworded [number]']);
+  assert.deepEqual(read('The house is old.', 'The horse is old.'), ['Look-alike word [lookalike]']);
+  assert.deepEqual(read('It is allowed.', 'It is not allowed.'), ['Added [polarity]']);
+});
+
+test('a month and its short form are the same month', () => {
+  assert.deepEqual(read('Due Jan 5, Feb. 12 and Sept 3.', 'Due January 5, February 12 and September 3.'), ['Abbreviation', 'Abbreviation', 'Abbreviation']);
+  assert.deepEqual(read('Due Jan 5.', 'Due Jun 5.'), ['Reworded [number]']);
 });

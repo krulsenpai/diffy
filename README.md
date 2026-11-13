@@ -26,8 +26,8 @@ Diffy never receives your text in the first place. All the work happens on your 
 
 ## What it does
 
-- **Reads like an editor.** It compares sentence by sentence, so a paragraph that was split, merged or re-wrapped doesn't turn the whole page red. Changes are marked word by word, and a fixed typo letter by letter.
-- **Flags what changes the meaning.** *will* → *will not*. *5 mg* → *50 mg*. *may* → *must*. *some* → *all*. A name, a date, a link that now points somewhere else.
+- **Reads like an editor.** It compares sentence by sentence, so a paragraph that was split, merged or re-wrapped doesn't turn the whole page red. Changes are marked word by word, and a fixed typo letter by letter. Add a clause to a numbered contract and you see one new clause and one renumbering, not a page of changed numbers.
+- **Flags what changes the meaning.** *will* → *will not*. *5 mg* → *50 mg*. *may* → *must*. *some* → *all*. *and* → *or*. A name, a date, a link that now points somewhere else. Two names, or two figures, that quietly changed places.
 - **Sees what you can't.** *liable* → *viable*. A letter from another alphabet hiding in a word. Invisible characters, and ones that flip the direction of the text.
 - **Keeps the noise out of the way.** Spelling, punctuation, quotes, spacing and formatting each get a category you can hide. "Meaning only" leaves just the edits that matter.
 - **Follows moves.** A paragraph that moved, even one edited on the way, shows up as a move, not as something deleted here and something new over there.
