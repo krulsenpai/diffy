@@ -2,6 +2,21 @@
 
 Diffy cannot check for updates, so this page is where you find out what changed. Press `?` inside Diffy to see which version you have.
 
+## 1.0.3
+
+Diffy was tried on real documents: fifteen pairs of licence versions, forty Word files and two editions of a book. This version fixes what they showed. There is nothing new to learn.
+
+- **Fewer false "Names" flags.** Words such as *You*, *Your*, *If* and *The* are no longer taken for names when a text writes them with a capital. Neither is a word shouted in capitals, as in *WITHOUT ANY WARRANTY*, the first word of a heading in Title Case, or the plural of the same word (*License* → *Licenses*).
+- **"©" is not a change of tone.** *(c)* turned into *©* is typography and nothing more. The same goes for ® and ™.
+- **Number words that are not figures.** *third* in "third party", *first* in "you first think" and a *MAY* in capitals are no longer flagged as changed numbers or dates.
+- **A flag that was missing.** *thirteenth* → *fourteenth* was not flagged. Ordinals above *twelfth* now are.
+- **Footnotes in Word files.** A sentence that ends with a footnote mark is now seen to end there, so sentences line up better. Add one footnote and Diffy shows one renumbering, instead of flagging every mark after it.
+- **A contents page.** When page numbers shift, Diffy shows one renumbering, not a flagged number on every line.
+- **A line break that becomes a paragraph break** is a paragraph split. Before, it could read as words removed in one place and a paragraph added in another.
+- **Short lines.** A date line or a table cell that changed is "reworded", no longer a "rewritten sentence".
+- **Two edits stay two.** "Pay 1,500 by 1 May" turned into "Pay 15,000 by 1 June" is now two changes, so you can accept one and reject the other.
+- **Sturdier.** The underline of an accepted or rejected change is written in a form every browser understands. Opened from the website, the button at the top says "Private" instead of "Offline & private". A browser too old to open Word files now says so.
+
 ## 1.0.2
 
 Diffy reads changes more accurately. There is nothing new to learn: the same two texts now give a truer picture.

@@ -510,3 +510,91 @@ test('a month and its short form are the same month', () => {
   assert.deepEqual(read('Due Jan 5, Feb. 12 and Sept 3.', 'Due January 5, February 12 and September 3.'), ['Abbreviation', 'Abbreviation', 'Abbreviation']);
   assert.deepEqual(read('Due Jan 5.', 'Due Jun 5.'), ['Reworded [number]']);
 });
+
+/* ---------- what real documents showed: licence versions, Word files, two editions of a book ---------- */
+test('the script holds no character that cannot be seen', () => {
+  // special spaces, joiners, direction marks, variation selectors and combining marks are written as their codes,
+  // so an editor cannot drop or change what it does not show
+  const ranges = [[0, 8], [0xB, 0xC], [0xE, 0x1F], [0x7F, 0xA0], [0xAD, 0xAD], [0x300, 0x36F], [0x1680, 0x1680], [0x180B, 0x180E], [0x2000, 0x200F], [0x2028, 0x202F], [0x205F, 0x206F], [0x3000, 0x3000], [0xFE00, 0xFE0F], [0xFEFF, 0xFEFF]];
+  const found = [...script].filter(c => { const n = c.codePointAt(0); return ranges.some(([lo, hi]) => n >= lo && n <= hi); }).map(c => 'U+' + c.codePointAt(0).toString(16).toUpperCase());
+  assert.deepEqual(found, []);
+});
+
+test('a function word, or a word in capitals, is not a name', () => {
+  // licences write "You" with a capital, and shout "WITHOUT ANY WARRANTY"
+  assert.deepEqual(read('We ask that You keep the notice.', 'We ask that everyone keep the notice.'), ['Reworded [scope]']);
+  assert.deepEqual(read('This comes WITHOUT ANY WARRANTY, without any warranty of title.', 'This comes WITHOUT WARRANTY, without any warranty of title.'), ['Removed [scope]']);
+  // "MAY" in capitals is the verb, unless a figure stands next to it
+  assert.deepEqual(read('In that case YOU MAY NOT copy it, as you may know.', 'In that case YOU MUST NOT copy it, as you may know.'), ['Reworded [modal]']);
+  assert.deepEqual(read('Payment is due on 4 MAY 2024.', 'Payment is due on 4 JUNE 2024.'), ['Reworded [number]']);
+  // an acronym is still a name, and so is a defined term
+  assert.deepEqual(read('It is released under the GNU terms.', 'It is released under the BSD terms.'), ['Reworded [name]']);
+  assert.deepEqual(read('We told the Buyer about it.', 'We told the Seller about it.'), ['Reworded [name]']);
+});
+
+test('the first word of a Title Case heading, and a plural, are not changed names', () => {
+  assert.deepEqual(read('Remote Network Interaction and Use\n\nThe body stays as it was.', 'Distant Network Interaction and Use\n\nThe body stays as it was.'), ['Reworded']);
+  assert.deepEqual(read('It is under the General Public License of the Foundation.', 'It is under the General Public Licenses of the Foundation.'), ['Word form']);
+  assert.deepEqual(read('New York was chosen.', 'New Jersey was chosen.'), ['Reworded [name]']);
+});
+
+test('the copyright sign is not a change of tone, and "(c)" is the same sign', () => {
+  assert.deepEqual(read('Copyright (c) 2007 Acme.', 'Copyright © 2007 Acme.'), ['Typography']);
+  assert.deepEqual(read('Made by Acme.', 'Made by Acme™.'), ['Punctuation added']);
+  assert.deepEqual(read('Well done.', 'Well done!'), ['Punctuation changed [tone]']);
+});
+
+test('a number word that is no figure where it stands is not a changed number', () => {
+  assert.deepEqual(read('No third party may use it.', 'No party may use it.'), ['Removed']);
+  assert.deepEqual(read('We suggest you think about it.', 'We suggest you first think about it.'), ['Added']);
+  // one ordinal put for another is, also above "twelfth"
+  assert.deepEqual(read('See the thirteenth chapter.', 'See the fourteenth chapter.'), ['Reworded [number]']);
+  assert.deepEqual(read('He came first.', 'He came second.'), ['Reworded [number]']);
+  assert.deepEqual(read('We use a two-step method.', 'We use a three-step method.'), ['Reworded [number]']);
+});
+
+test('a line break that becomes a paragraph break is a paragraph split', () => {
+  assert.deepEqual(read('Title here.\n\nNotes\nAlthough the rule is strict, it has exceptions.', 'Title here.\n\nNotes\n\nAlthough the rule is strict, it has exceptions.'), ['Paragraph split']);
+  // hard-wrapped text is still read as running sentences
+  assert.equal(sentences('This line of an email\nis hard wrapped at some\ncolumn width. It goes on.\n\nSecond paragraph.'), 3);
+});
+
+test('the page numbers of a contents page are numbering', () => {
+  const body = '\nIntroduction\n\nWe begin here.\n\nMethod\n\nWhat we did.\n\nResults\n\nWhat we found.\n';
+  const a = 'Contents\n\nIntroduction\t3\n\nMethod\t9\n\nResults\t14\n' + body, b = 'Contents\n\nIntroduction\t3\n\nMethod\t10\n\nResults\t15\n' + body;
+  const M = E.compare(a, b, {});
+  assert.deepEqual(labels(M), ['Numbering']);
+  assert.equal(M.hunks[M.order[0]].places, 2);
+  assert.equal(acceptAll(M), b); assert.equal(rejectAll(M), a);
+  // the last column of a price list is not a page number: no line of it is a heading somewhere else
+  assert.deepEqual(read('Coffee\t3\n\nTea\t2\n\nCake\t4', 'Coffee\t4\n\nTea\t2\n\nCake\t5'), ['Reworded [number]', 'Reworded [number]']);
+});
+
+test('a short line that changed is reworded, not a rewritten sentence', () => {
+  assert.deepEqual(read('15 May 2018', '07 March 2019'), ['Reworded [number]']);
+  assert.deepEqual(read('Item\n\nWidget\n\n10', 'Item\n\nWidget\n\n12'), ['Reworded [number]']);
+});
+
+test('a footnote mark belongs to its sentence, and renumbered marks are numbering', () => {
+  assert.equal(sentences('The court agreed.[1] The appeal failed.[2] Costs were awarded.[3]'), 3);
+  assert.equal(sentences('The court agreed.¹ The appeal failed.² Costs were awarded.'), 3);
+  // the way Diffy writes the footnotes of a Word file: marks in the text, the notes listed at the end
+  const notes = list => list.map((s, i) => '[' + (i + 1) + '] ' + s).join('\n\n') + '\n';
+  const a = 'The court agreed.[1] The appeal failed.[2] Costs were awarded.[3]\n\n' + notes(['Smith v Jones.', 'Ibid.', 'Rule 44.']);
+  const b = 'The court agreed.[1] The ruling was narrow.[2] The appeal failed.[3] Costs were awarded.[4]\n\n' + notes(['Smith v Jones.', 'Brown v Green.', 'Ibid.', 'Rule 44.']);
+  const M = E.compare(a, b, {});
+  assert.deepEqual(labels(M), ['Sentence added', 'Numbering', 'Paragraph added']);
+  assert.equal(M.hunks[M.order[1]].places, 4);
+  assert.equal(acceptAll(M), b); assert.equal(rejectAll(M), a);
+  // a number in brackets with a space before it is a reference, and stays a changed number
+  assert.deepEqual(read('As shown in [2], it holds.', 'As shown in [3], it holds.'), ['Reworded [number]']);
+});
+
+test('two complete edits with a word between them stay two changes', () => {
+  assert.deepEqual(read('Pay 1,500 by 1 May at the latest.', 'Pay 15,000 by 1 June at the latest.'), ['Reworded [number]', 'Reworded [number]']);
+  assert.deepEqual(read('Register at https://example.com/register until Friday.', 'Register at https://example.com/signup until Monday.'), ['Reworded [link]', 'Reworded [number]']);
+  assert.deepEqual(read('He dont know wether to go.', 'He doesn\'t know whether to go.'), ['Word form', 'Spelling']);
+  // a reworded phrase is still one change, and so is a number given in words and in figures
+  assert.deepEqual(read('We need to make it work today.', 'We need to take it away today.'), ['Reworded']);
+  assert.deepEqual(read('It runs for a period of twelve (12) months.', 'It runs for a period of twenty-four (24) months.'), ['Reworded [number]']);
+});

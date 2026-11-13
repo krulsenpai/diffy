@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Diffy 1.0.2: a private, offline, prose-aware diff tool. One file, no dependencies.
+  Diffy 1.0.3: a private, offline, prose-aware diff tool. One file, no dependencies.
   Source and newer versions: https://github.com/krulsenpai/diffy
   (Diffy cannot check for updates itself: it cannot reach the internet, by design.)
 
@@ -19,7 +19,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hvMaB/kuRG0qzr9tZCyWS++unusmDeB6vfdOMO5n03I='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-l5YVGSPfeAQd6DVTT6xOlOvgEH5TCtDME4eorp+jGI4='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
@@ -262,9 +262,10 @@ del,ins{text-decoration:none}
 .h.off,.h.acc,.h.rej{background-image:none}
 .h.off::before,.h.acc::before,.h.rej::before{display:none!important}
 .h.off .wsm,.h.off .pm,.h.off .mvtag,.h.acc .mvtag,.h.rej .mvtag,.h.acc .wsm,.h.rej .wsm{display:none}
-.h.acc .i:not(.s){text-decoration:underline solid 2px;text-decoration-color:var(--ins-line);text-underline-offset:.3em}
-.h.rej .d:not(.s){text-decoration:underline dashed 2px;text-decoration-color:var(--del-line);text-underline-offset:.3em}
-.h.off .i:not(.s){text-decoration:underline dotted 1px;text-decoration-color:var(--line-2);text-underline-offset:.3em}
+/* (each part of the underline is set by itself: not every browser reads a thickness inside the short form) */
+.h.acc .i:not(.s){text-decoration-line:underline;text-decoration-style:solid;text-decoration-thickness:2px;text-decoration-color:var(--ins-line);text-underline-offset:.3em}
+.h.rej .d:not(.s){text-decoration-line:underline;text-decoration-style:dashed;text-decoration-thickness:2px;text-decoration-color:var(--del-line);text-underline-offset:.3em}
+.h.off .i:not(.s){text-decoration-line:underline;text-decoration-style:dotted;text-decoration-thickness:1px;text-decoration-color:var(--line-2);text-underline-offset:.3em}
 .uni .h.acc .d,.uni .h.off:not(.rej) .d,.uni .h.rej .i,.uni .h.mv.rej .d.x{display:none}
 .uni .h.acc .pm.i,.uni .h.rej .pm.d{display:none}
 .uni .blk.acc.blk-mvs,.uni .blk.rej.blk-mvd,.uni .blk.off.blk-del:not(.rej),.uni .blk.off.blk-ins.rej,.uni .blk.off.blk-mvs:not(.rej){display:none}
@@ -699,7 +700,7 @@ const CATS = {
   punct:    { tier: 'mech', label: 'Punctuation', desc: 'Commas, full stops, quotes, brackets and other symbols.' },
   case:     { tier: 'mech', label: 'Capitalization', desc: 'Upper/lower case only.' },
   style:    { tier: 'mech', label: 'Style', desc: 'Contractions, hyphenation, number formatting.' },
-  format:   { tier: 'mech', label: 'Formatting', desc: 'Markdown and HTML formatting: bold, italics, headings, list markers, code, tags. Renumbered clauses and lists.' },
+  format:   { tier: 'mech', label: 'Formatting', desc: 'Markdown and HTML formatting: bold, italics, headings, list markers, code, tags. Renumbered clauses, lists and footnotes, and the page numbers of a contents page.' },
   typo:     { tier: 'mech', label: 'Typography', desc: 'Curly vs straight quotes, dashes, ellipses, special spaces.' },
   space:    { tier: 'mech', label: 'Spacing', desc: 'Extra spaces, tabs, blank lines, line wrapping and line endings.' },
   para:     { tier: 'mech', label: 'Paragraphs', desc: 'Paragraphs split or merged.' },
@@ -718,8 +719,8 @@ const MODAL = S('can could may might must shall should will would ought need nee
 const SCOPE = S('all every each any some most many much few fewer several both either neither only solely exclusively always often usually generally typically frequently sometimes occasionally rarely seldom mostly mainly largely entirely partly partially completely fully wholly majority minority nearly almost approximately roughly exactly precisely least more less everyone everybody everything everywhere anyone anything whole half sole except excluding');
 const TONE = S('maybe perhaps possibly probably likely apparently arguably seemingly presumably supposedly allegedly reportedly somewhat slightly fairly quite rather pretty very really extremely highly incredibly absolutely totally utterly definitely certainly clearly obviously undoubtedly surely simply just actually basically essentially literally truly deeply strongly significantly substantially considerably dramatically vastly marginally hopefully unfortunately fortunately sadly luckily frankly honestly admittedly seem seems seemed appear appears appeared suggest suggests suggested think believe feel suspect guess assume');
 const ARTICLES = S('a an the');
-const UNITS_N = dict({ zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8, ninth: 9, tenth: 10, eleventh: 11, twelfth: 12, dozen: 12, twice: 2, thrice: 3 });
-const TENS_N = dict({ twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90, twentieth: 20, thirtieth: 30, fortieth: 40, fiftieth: 50 });
+const UNITS_N = dict({ zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8, ninth: 9, tenth: 10, eleventh: 11, twelfth: 12, thirteenth: 13, fourteenth: 14, fifteenth: 15, sixteenth: 16, seventeenth: 17, eighteenth: 18, nineteenth: 19, dozen: 12, twice: 2, thrice: 3 });
+const TENS_N = dict({ twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90, twentieth: 20, thirtieth: 30, fortieth: 40, fiftieth: 50, sixtieth: 60, seventieth: 70, eightieth: 80, ninetieth: 90 });
 const SCALES_N = dict({ hundred: 100, thousand: 1e3, million: 1e6, billion: 1e9, trillion: 1e12, hundredth: 100, thousandth: 1e3, millionth: 1e6 });
 const isNumWord = w => w in UNITS_N || w in TENS_N || w in SCALES_N || w === 'half';
 // units and currency codes that belong to the number next to them: "5 mg" → "5 kg" is a changed amount
@@ -754,7 +755,7 @@ const CONTR = dict({
   havent: ['have', 'not'], hadnt: ['had', 'not'],
 });
 // Typo evidence: when one side is a well-known misspelling, a one-letter difference is a spelling fix, not a different word.
-const MISSPELT = S('accomodate accomodation acheive acheived adress agressive alot apparant arguement assasination basicly becuase beacuse begining beggining beleive beleived beleif buisness calender carribean cemetary collegue comming commited comitted comittee completly concious copywrite curiousity definately definitly dilemna dissapear dissapoint embarass embarassed enviroment existance excercise familar febuary finaly foriegn fourty freind gaurd goverment grammer gratefull happend harrass hight humourous ignorence immediatly independant interupt jist knowlege liason libary lisence maintainance millenium mispell neccessary neice noticable occassion occured occuring occurence ocurred paralell peice persue posession prefered privelege probaly pronounciation publically questionaire recieve recieved recieving reciept reccomend recomend refered relevent religous remeber resistence rythm seperate seperately sieze speach strech succesful sucess supercede suprise temperture threshhold tommorow tounge truely tyrany untill vaccuum vehical visable wierd wich writting thier teh hte adn taht waht jsut nad yuo becasue transfered submited admited omited permited regreted forgeting controled begining shoudl woudl coudl alright');
+const MISSPELT = S('accomodate accomodation acheive acheived adress agressive alot apparant arguement assasination basicly becuase beacuse begining beggining beleive beleived beleif buisness calender carribean cemetary collegue comming commited comitted comittee completly concious copywrite curiousity definately definitly dilemna dissapear dissapoint embarass embarassed enviroment existance excercise familar febuary finaly foriegn fourty freind gaurd goverment grammer gratefull happend harrass hight humourous ignorence immediatly independant interupt jist knowlege liason libary lisence maintainance millenium mispell neccessary neice noticable occassion occured occuring occurence ocurred paralell peice persue posession prefered privelege probaly pronounciation publically questionaire recieve recieved recieving reciept reccomend recomend refered relevent religous remeber resistence rythm seperate seperately sieze speach strech succesful sucess supercede suprise temperture threshhold tommorow tounge truely tyrany untill vaccuum vehical visable wether wierd wich writting thier teh hte adn taht waht jsut nad yuo becasue transfered submited admited omited permited regreted forgeting controled begining shoudl woudl coudl alright');
 // real word pairs that differ by one doubled letter (so the doubling alone is no evidence of a typo)
 const REAL_DOUBLE = S('later|latter diner|dinner hoping|hopping filing|filling planed|planned holy|holly super|supper coma|comma desert|dessert striped|stripped scraped|scrapped taped|tapped moping|mopping caned|canned pined|pinned robed|robbed staring|starring cuter|cutter lose|loose chose|choose to|too of|off tiny|tinny ruble|rubble biter|bitter liter|litter mated|matted bated|batted dating|datting riding|ridding hated|hatted biding|bidding coping|copping doting|dotting fated|fatted pining|pinning planing|planning scared|scarred sniped|snipped wading|wadding wining|winning baring|barring caning|canning dining|dinning hoped|hopped loped|lopped moped|mopped rated|ratted tiling|tilling wiling|willing filed|filled tiled|tilled poled|polled holed|holled');
 const ABBR = S('mr mrs ms mx dr prof sr jr st mt ft vs etc cf al ca approx est dept univ gen col lt sgt capt cmdr rev hon gov sen rep pres inc ltd co corp llc plc no nos fig figs vol vols ch sec pp ed eds trans jan feb mar apr jun jul aug sep sept oct nov dec mon tue tues wed thu thur thurs fri sat sun ave blvd rd hwy');
@@ -807,7 +808,7 @@ const ANT = new Set();
 const RE_SQ = /[‘’‚‛`´ʼ′]/g;
 const RE_DQ = /[“”„‟«»″〝〞]/g;
 const RE_DASH = /[‐‑‒–—―−]/g;
-const RE_SPC = /[     ]/g;
+const RE_SPC = /[\u00A0\u2007\u202F\u2009\u200A]/g;
 function normTypo(s) {
   return s.replace(RE_SQ, "'").replace(RE_DQ, '"').replace(RE_DASH, '-').replace(/…/g, '...').replace(RE_SPC, ' ');
 }
@@ -819,7 +820,7 @@ function looseKey(t, kind) {
   }
   // accents are folded only on Latin letters (café = cafe), and ñ stays a letter of its own; other scripts keep their marks (й ≠ и)
   return normTypo(t.normalize('NFKC')).toLowerCase().normalize('NFD')
-    .replace(/(\p{Script=Latin})([̀-ͯ]+)/gu, (m, b, mk) => b === 'n' && mk.includes('̃') ? b + '̃' : b).normalize('NFC');
+    .replace(/(\p{Script=Latin})([\u0300-\u036F]+)/gu, (m, b, mk) => b === 'n' && mk.includes('\u0303') ? b + '\u0303' : b).normalize('NFC');
 }
 // characters that change what text means or how it displays while showing nothing (or looking like something else)
 const RE_BIDI = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/;
@@ -851,6 +852,10 @@ const RE_NOSPACE = /[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Thai}\p{sc=La
 const SEG = (typeof Intl !== 'undefined' && Intl.Segmenter) ? new Intl.Segmenter(undefined, { granularity: 'word' }) : null;
 const splitNoSpace = t => SEG ? Array.from(SEG.segment(t), s => s.segment) : Array.from(t);
 const RE_EMOJI = /\p{Extended_Pictographic}|\p{RI}/u;
+// ©, ® and ™ are picture characters to Unicode. In a text they are signs like any other: no emoji, and nothing to do with tone.
+const RE_SIGN = /^[\u00A9\u00AE\u2122]\uFE0F?$/, isEmoji = s => RE_EMOJI.test(s) && !RE_SIGN.test(s);
+// a word written in CAPITALS: emphasis ("WITHOUT ANY WARRANTY"), or an acronym
+const shout = t => t.t.length > 1 && t.t === t.t.toUpperCase();
 
 // Markdown / HTML markup becomes tokens of its own (K_M): compared like anything else and filed as Formatting, never counted as words.
 const HTML_TAGS = S('a abbr address area article aside audio b bdi bdo blockquote body br button canvas caption center cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure font footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p param picture pre progress q rp rt ruby s samp script section select slot small source span strike strong style sub summary sup svg table tbody td template textarea tfoot th thead time title tr track tt u ul var video wbr');
@@ -977,7 +982,11 @@ function tokenizePara(s, md) {
     else if (m[4] !== undefined) push(t, K_N);
     else if (m[5] !== undefined && RE_NOSPACE.test(t)) {
       for (const seg of splitNoSpace(t)) push(seg, /^\p{N}/u.test(seg) ? K_N : K_W);
-    } else push(t, K_W);
+    } else {
+      // a raised figure after a full stop is a footnote mark, not part of the word: "agreed.¹ The appeal…"
+      const sup = RE_WORD_SUP.exec(t);
+      if (sup) { push(sup[1], K_W); push('.', K_P); push(sup[2], K_N); } else push(t, K_W);
+    }
   }
   pairDelims(toks);
   return { toks, tail: pre };
@@ -1070,7 +1079,9 @@ function splitParas(text, mode, md) {
     prevLine = line;
   }
   close();
-  return { mode, paras: groups.map(gr => ({ start: lines[gr.l0][0], end: lines[gr.l1][1] })) };
+  // lineEnds: the text has paragraphs set apart by blank lines and is not hard-wrapped, so a line break inside a
+  // paragraph is one its writer put there (a list, an address, a line break in a Word file)
+  return { mode, lineEnds: mode === 'blank' && !looksWrapped(text, lines), paras: groups.map(gr => ({ start: lines[gr.l0][0], end: lines[gr.l1][1] })) };
 }
 
 const RE_TERM = /^(?:[.!?…。！？‼⁇-⁉]+|\.{2,})$/;
@@ -1086,14 +1097,31 @@ function isAbbrev(w, next) {
 }
 const isCloserMk = (toks, j) => toks[j].kind === K_M && toks[j].pair != null && toks[j].pair < j;
 // from: where the paragraph's text starts, after a clause number such as "3." or "Article 5." (its full stop ends no sentence)
-function splitSentences(toks, from) {
+// A footnote mark set right against the text: "[1]" (how Diffy writes the notes of a Word file) or a raised figure
+// after a full stop. Returns how many tokens the mark at j takes, or 0 when there is none.
+const RE_SUP = /^[¹²³⁰⁴-⁹]+$/, RE_WORD_SUP = /^(.*\p{L})\.([¹²³⁰⁴-⁹]+)$/u;
+function noteMark(toks, j) {
+  const t = toks[j]; if (!t || t.pre !== '' || t.first) return 0;
+  if (t.kind === K_N && RE_SUP.test(t.t)) return 1;
+  const a = toks[j + 1], b = toks[j + 2];
+  return t.kind === K_P && t.t === '[' && a && a.kind === K_N && a.pre === '' && /^\d{1,3}$/.test(a.t) && b && b.kind === K_P && b.t === ']' && b.pre === '' ? 3 : 0;
+}
+// lineEnds: a line break inside the paragraph ends a sentence too (see splitParas)
+function splitSentences(toks, from, lineEnds) {
   const out = []; let start = 0; const n = toks.length;
   for (let i = from || 0; i < n; i++) {
     const tk = toks[i];
+    // "Notes" on a line of its own and the sentence under it are two units: when the line break between them becomes
+    // a paragraph break, that is a paragraph split, not a word removed here and a paragraph added there
+    if (lineEnds && i > start && i > (from || 0) && tk.pre.indexOf('\n') >= 0) { out.push([start, i]); start = i; }
     if (tk.kind !== K_P || !RE_TERM.test(tk.t)) continue;
     let j = i + 1;
     // the sentence keeps its closing quotes, brackets, extra terminators and closing markup ("done.**")
-    while (j < n && toks[j].pre === '' && ((toks[j].kind === K_P && (RE_CLOSE.test(toks[j].t) || RE_TERM.test(toks[j].t))) || isCloserMk(toks, j))) j++;
+    // and its footnote mark: "…the court agreed.[1] The appeal…"
+    for (let nm = 1; nm;) {
+      while (j < n && toks[j].pre === '' && ((toks[j].kind === K_P && (RE_CLOSE.test(toks[j].t) || RE_TERM.test(toks[j].t))) || isCloserMk(toks, j))) j++;
+      nm = noteMark(toks, j); j += nm;
+    }
     if (j >= n) break;
     if (!/[。！？]/.test(tk.t)) {
       let ok = /\s/.test(toks[j].pre);
@@ -1119,7 +1147,7 @@ function markSentence(toks, s0, s1) {
     const tk = toks[i];
     if (tk.kind === K_M) continue;
     if (tk.kind === K_P) { if (RE_OPEN.test(tk.t) || /^[:—–-]$/.test(tk.t)) open = true; continue; }
-    tk.init = open;
+    tk.init = open; if (open && title) tk.head = true;
     tk.cap = !open && !title && tk.kind === K_W && /^\p{Lu}/u.test(tk.t) && !/^I(?:['’]|$)/.test(tk.t) && !/\p{N}/u.test(tk.t);
     open = false;
   }
@@ -1156,6 +1184,7 @@ function leadLabel(toks) {
   if (t.kind === K_N && /^\d{1,3}(?:\.\d{1,3}){1,4}$/.test(t.t)) { at = f; end = f + (mark(n1, '.') ? 2 : 1); fam = 'dot'; }            // 3.1   3.1.
   else if (t.kind === K_N && /^\d{1,3}$/.test(t.t) && (mark(n1, '.') || mark(n1, ')'))) { at = f; end = f + 2; fam = n1.t === '.' ? 'dot' : 'n)'; } // 3.   3)
   else if (t.kind === K_P && t.t === '(' && tight(n1) && mark(n2, ')') && (n1.kind === K_N ? /^\d{1,3}$/.test(n1.t) : labelVals(n1).length > 0)) { at = f + 1; end = f + 3; fam = n1.kind === K_N ? '(n)' : '(a)'; } // (2)  (a)  (iv)
+  else if (t.kind === K_P && t.t === '[' && tight(n1) && n1.kind === K_N && /^\d{1,3}$/.test(n1.t) && mark(n2, ']')) { at = f + 1; end = f + 3; fam = '[n]'; } // [2]  a note in a list of notes
   else if (t.kind === K_W && labelVals(t).length && mark(n1, ')')) { at = f; end = f + 2; fam = 'a)'; }                                    // a)   iv)
   else if (((t.kind === K_W && LABEL_WORDS.has(bare(t.k))) || (t.kind === K_P && t.t === '§')) && n1 && n1.pre.length <= 1 && labelVals(n1).length) { // Article 5   Section 3.2   Appendix B
     at = f + 1; end = f + (mark(n2, '.') ? 3 : 2); fam = 'w:' + bare(t.k);
@@ -1183,7 +1212,7 @@ function parseDoc(text, opt) {
   text = (bom ? text.slice(1) : text).replace(/\r\n?/g, '\n');
   const md = !!opt.markdown;
   const sp = splitParas(text, opt.paraMode || 'auto', md);
-  const toks = [], units = [], paras = [], labs = [];
+  const toks = [], units = [], paras = [], labs = [], pages = [], seen = new Map();
   let sepStart = 0, lead = null, tailPre = '';
   for (const pr of sp.paras) {
     const r = tokenizePara(text.slice(pr.start, pr.end), md);
@@ -1198,7 +1227,31 @@ function parseDoc(text, opt) {
     r.toks[0].first = true;
     const lab = leadLabel(r.toks);
     if (lab) labs.push({ tok: r.toks[lab.at], fam: lab.fam, vals: lab.vals, ok: !!lab.sure });
-    const sents = splitSentences(r.toks, lab ? lab.end : 0); // still uses paragraph-local partner indices
+    // Footnote marks in the text ("…agreed.[2]") are numbering too, where one runs on from the last: add a footnote
+    // and every mark after it moves up by one. A mark with a space before it ("as shown in [2]") is a reference.
+    for (let q = 1; q < r.toks.length; q++) {
+      const nm = noteMark(r.toks, q); if (!nm) continue;
+      const nt = r.toks[nm === 3 ? q + 1 : q];
+      labs.push({ tok: nt, fam: 'note', vals: [[Number(nt.t.normalize('NFKC'))]], ok: false }); q += nm - 1;
+    }
+    // The page number of a line in a table of contents: the figure a paragraph ends with, after a tab or a row of
+    // dots. It only counts as one when the words of the line are a paragraph of their own elsewhere in the text (the
+    // heading it points to), so the last column of a price list never does.
+    // (Where line breaks are the writer's own, each line of a paragraph is looked at by itself, and a line may open
+    // with a number of its own: a list of notes set one to a line.)
+    for (let q0 = 0, q = 1; q <= r.toks.length; q++) {
+      if (q < r.toks.length && !(sp.lineEnds && r.toks[q].pre.indexOf('\n') >= 0)) continue;
+      if (q0 > 0) { const l2 = leadLabel(r.toks.slice(q0, q)); if (l2) labs.push({ tok: r.toks[q0 + l2.at], fam: l2.fam, vals: l2.vals, ok: !!l2.sure }); }
+      let sig = '';
+      for (let x = q0; x < q; x++) if (r.toks[x].kind === K_W) sig += r.toks[x].k + ' ';
+      if (sig) {
+        const end = r.toks[q - 1], bef = q - 2 >= q0 ? r.toks[q - 2] : null;
+        seen.set(sig, (seen.get(sig) || 0) + 1);
+        if (bef && end.kind === K_N && /^\d{1,4}$/.test(end.t) && (end.pre.indexOf('\t') >= 0 || (bef.kind === K_P && /^(?:\.{3,}|…+)$/.test(bef.t)))) pages.push({ tok: end, sig });
+      }
+      q0 = q;
+    }
+    const sents = splitSentences(r.toks, lab ? lab.end : 0, sp.lineEnds); // still uses paragraph-local partner indices
     for (const tk of r.toks) if (tk.pair != null) tk.pair += t0;
     for (const [s0, s1] of sents) {
       markSentence(r.toks, s0, s1);
@@ -1220,6 +1273,7 @@ function parseDoc(text, opt) {
     last.set(L.fam, L);
   }
   for (const L of labs) if (L.ok) L.tok.lbl = true;
+  for (const P of pages) if (seen.get(P.sig) > 1) P.tok.lbl = true;
   for (const u of units) {
     if (u.kind !== 's') { u.key = u.kind; u.nw = 0; u.bag = null; u.w = 0; continue; }
     const keys = [], wk = [], bag = new Map(); let nw = 0;
@@ -1645,9 +1699,14 @@ const tokLen = t => isWord(t) ? Math.max(1, t.k.length) : 1;
 const pureWord = t => t.kind === K_W && !/\p{N}/u.test(t.t);
 const sameLemma = (a, b) => (!!IRR[a] && IRR[a] === IRR[b]) || (stem(a) === stem(b) && inflected(a, b));
 const monthForms = (a, b) => a !== b && MONTHS.has(a) && MONTHS.has(b) && a.slice(0, 3) === b.slice(0, 3); // Jan / January
+// one contraction for another form of the same words: "dont" → "doesn't"
+function contracted(a, b) {
+  const x = expand([a]), y = expand([b]);
+  return (x.length > 1 || y.length > 1) && x.length === y.length && x.every((w, i) => w === y[i] || sameLemma(w, y[i]));
+}
 function respelt(a, b) {
   if (a === b || a.length > 64 || b.length > 64) return false;
-  return usify(a) === usify(b) || (!!CONFUSABLE[a] && CONFUSABLE[a].includes(b)) || sameLemma(a, b) || (isTypo(a, b) && typoEvidence(a, b));
+  return usify(a) === usify(b) || contracted(a, b) || (!!CONFUSABLE[a] && CONFUSABLE[a].includes(b)) || sameLemma(a, b) || (isTypo(a, b) && typoEvidence(a, b));
 }
 function cleanupRuns(runs, A, B) {
   const len = (list, D) => { let s = 0; for (const t of list) s += tokLen(D.toks[t]); return s; };
@@ -1665,6 +1724,16 @@ function cleanupRuns(runs, A, B) {
     }
     return a.length > 0 && a.length === b.length && a.length <= 8 && a.every((x, i) => same(x, b[i]) || monthForms(bare(A.toks[x].k), bare(B.toks[b[i]].k)));
   };
+  // is the block of changes in runs q0…q1 figures, days, months or addresses on both sides, and no other word?
+  const hard = t => t.kind === K_N || isLinkTok(t) || (t.kind === K_W && (isNumWordTok(t) || MONTHS.has(bare(t.k)) || DAYS.has(bare(t.k))));
+  const atomBlock = (q0, q1) => {
+    let a = 0, b = 0;
+    for (let q = q0; q <= q1; q++) {
+      for (const t of runs[q].a) if (isWord(A.toks[t])) { if (!hard(A.toks[t])) return false; a++; }
+      for (const t of runs[q].b) if (isWord(B.toks[t])) { if (!hard(B.toks[t])) return false; b++; }
+    }
+    return a > 0 && b > 0;
+  };
   for (let changed = true, guard = 0; changed && guard < 64; guard++) {
     changed = false;
     for (let r = 1; r < runs.length - 1; r++) {
@@ -1677,6 +1746,9 @@ function cleanupRuns(runs, A, B) {
       for (; q < runs.length && runs[q].op !== 0; q++) { ad += len(runs[q].a, A); ai += len(runs[q].b, B); }
       if (q === r + 1) continue;
       if (respeltBlock(q0, r - 1) || respeltBlock(r + 1, q - 1)) continue;
+      // Nor is a word between two changes when one of them swaps a figure, a date or an address for another: "pay
+      // 1,500 by 1 May" → "pay 15,000 by 1 June" is two changes, and each can be taken or left on its own.
+      if (R.a.some(t => isWord(A.toks[t])) && (atomBlock(q0, r - 1) || atomBlock(r + 1, q - 1))) continue;
       const L = len(R.a, A);
       if (L < Math.max(bd, bi) && L < Math.max(ad, ai)) {
         runs.splice(r, 1, { op: 1, a: R.a, b: [] }, { op: 2, a: [], b: R.b });
@@ -1846,14 +1918,19 @@ function numPhrases(D, idx) {
         if (m && UNIT.has(m[2])) { nums.push(m[1]); units.push(UNIT_ALIAS[m[2]] || m[2]); } else nums.push(c);
       }
       else if (t.kind === K_W && RE_CJKNUM.test(t.t)) nums.push(cjkNum(t.t));
-      else if (isCodeNum(t)) nums.push(k);
+      // a word joined to a number word counts by its number: "a two-step method" still has two steps
+      else if (isCodeNum(t)) nums.push(/\p{N}/u.test(t.t) ? k : wordsToNumbers(wordOnly(t).filter(isNumWord)));
       else if (t.kind === K_P && CURRENCY.has(t.t)) cur += t.t;
       else if (t.kind === K_P && t.t === '%') units.push('%');
       else if (t.kind === K_P && SIGNS.has(t.t) && !(isNumTok(T[q - 1]) && t.pre === '')) { if (!nums.length) sign = t.t === '+' || t.t === '±' ? t.t : '−'; }
       else if (t.kind === K_W) { const u = UNIT_ALIAS[k] || k; if (/^[$€¥¢£₹]$/.test(u)) cur += u; else units.push(u); }
     }
     flush();
-    if (nums.length === 1 && !cur && !units.length && !sign && text.toLowerCase() === 'one') continue; // "one of them"
+    // number words that are no figure where they stand: "one of them", "you first think", "a third party"
+    if (nums.length === 1 && !cur && !units.length && !sign) {
+      const low = text.toLowerCase();
+      if (low === 'one' || low === 'first' || /^third-part(?:y|ies)$/.test(low) || (low === 'third' && /^part(?:y|ies)$/.test(bare((T[e + 1] || {}).k || '')))) continue;
+    }
     // at: where the phrase starts; atoms: its parts one after another, however they were grouped
     out.push({ key: sign + cur + nums.join('|') + (units.length ? ' ' + units.join(' ') : ''), text, at: s, atoms: [sign, cur].concat(nums, units).filter(Boolean).join(' ') });
   }
@@ -1862,9 +1939,10 @@ function numPhrases(D, idx) {
 // May is a month in "Due May 4" but a modal in "May I…"; Will is a name in "Will Smith"
 function wordRole(D, t) {
   if (!/^\p{Lu}/u.test(t.t)) return null;
-  const k = bare(t.k), nx = D.toks[t.i + 1];
-  if (MONTHS.has(k) && (!t.init || isNumTok(nx))) return 'date';
-  if ((MODAL.has(k) || SCOPE.has(k) || TONE.has(k)) && (t.cap || (nx && nx.kind === K_W && /^\p{Lu}/u.test(nx.t) && joined(nx)))) return 'name';
+  const k = bare(t.k), nx = D.toks[t.i + 1], caps = shout(t);
+  // A word in CAPITALS is emphasis ("YOU MAY NOT COPY…"): a month only with a figure beside it ("4 MAY 2024"), never a name
+  if (MONTHS.has(k) && (caps ? isNumTok(nx) || isNumTok(D.toks[t.i - 1]) : !t.init || isNumTok(nx))) return 'date';
+  if (!caps && (MODAL.has(k) || SCOPE.has(k) || TONE.has(k)) && (t.cap || (nx && nx.kind === K_W && /^\p{Lu}/u.test(nx.t) && joined(nx)))) return 'name';
   return null;
 }
 // other: the days and months named on the other side of the change. A word one slip away from one of those is that
@@ -1876,7 +1954,7 @@ function datesOf(D, idx, other) {
     let k = bare(t.k);
     if (!MONTHS.has(k) && !DAYS.has(k)) { const w = other && dateWord(k); if (!w || !other.has(w)) continue; k = w; }
     if (DAYS.has(k)) out.push({ key: 'd:' + k, text: t.t });
-    else if (/^\p{Lu}/u.test(t.t) && (!t.init || isNumTok(D.toks[t.i + 1]))) out.push({ key: 'm:' + k.slice(0, 3), text: t.t });
+    else if (/^\p{Lu}/u.test(t.t) && (shout(t) ? isNumTok(D.toks[t.i + 1]) || isNumTok(D.toks[t.i - 1]) : !t.init || isNumTok(D.toks[t.i + 1]))) out.push({ key: 'm:' + k.slice(0, 3), text: t.t });
   }
   return out;
 }
@@ -1959,11 +2037,21 @@ function findReversal(rem, add) {
   return null;
 }
 const nameLike = k => k.length > 1 && !FUNC.has(k) && !NEG.has(k) && !MODAL.has(k) && !SCOPE.has(k) && !TONE.has(k) && !CUR.lower.has(k);
-const isName = (D, t, loose) => t.kind === K_W && /^\p{Lu}/u.test(t.t) && !/\p{N}/u.test(t.t) && !MONTHS.has(bare(t.k)) && !DAYS.has(bare(t.k)) &&
-  (t.cap || wordRole(D, t) === 'name' || (t.init && nameLike(bare(t.k)) && (loose || CUR.caps.has(bare(t.k)) || capNext(D, t))));
+function isName(D, t, loose) {
+  if (t.kind !== K_W || !/^\p{Lu}/u.test(t.t) || /\p{N}/u.test(t.t)) return false;
+  const k = bare(t.k);
+  if (MONTHS.has(k) || DAYS.has(k)) return false;
+  // A word in CAPITALS that the texts also write in small letters is emphasis ("WITHOUT ANY WARRANTY"), not a name.
+  // An acronym (GNU, NATO) never appears in small letters and stays one.
+  if (shout(t) && CUR.lower.has(k)) return false;
+  // A capital in mid-sentence makes a name, or a defined term ("the Buyer"). It makes none of a function word: licences
+  // write "You" and "Your" that way, and a list may open with "If" or "The" after a colon.
+  return (t.cap && !FUNC.has(k)) || wordRole(D, t) === 'name' || (t.init && nameLike(k) && (loose || CUR.caps.has(k) || (!t.head && capNext(D, t))));
+}
 // The first word of a sentence is capitalized whatever it is. It only counts as a name with some support: the same
 // word capitalized in mid-sentence somewhere in the two texts, or a capitalized word right after it ("New York").
 // Without that, every ordinary first word that changed ("Customers" → "Clients") was flagged as a name.
+// (In a heading set in Title Case every word is followed by a capital, so there the next word is no support: t.head.)
 function capNext(D, t) { const nx = D.toks[t.i + 1]; return !!nx && nx.kind === K_W && /^\p{Lu}/u.test(nx.t) && joined(nx); }
 const isInvis = t => t.kind === K_P && (RE_INVIS.test(t.t) || RE_BIDI.test(t.t));
 const RE_DOMAIN = /^(?:[\p{L}\p{N}-]+\.)+\p{L}{2,}$/u;
@@ -2017,7 +2105,13 @@ function computeFlags(h, ia, ib, nearA, nearB) {
   let ca = names(A, wa, false, dB), cb = names(B, wb, false, dA);
   // a name on one side makes the first word of a sentence on the other side one too: "Maria signed." → "Marta signed."
   if (ca.length && !cb.length) cb = names(B, wb, true, dA); else if (cb.length && !ca.length) ca = names(A, wa, true, dB);
-  if (!msEq(ca, cb)) F.push(['name', changeText(msDiff(ca, cb))]);
+  // the same name in another form ("License" → "Licenses", "Buyer" → "Buyer's") is no other name
+  const dnm = msDiff(ca, cb);
+  for (let x = dnm.rem.length - 1; x >= 0; x--) {
+    const a = dnm.rem[x].toLowerCase(), y = dnm.add.findIndex(b => a.length <= 64 && b.length <= 64 && sameLemma(a, b.toLowerCase()));
+    if (y >= 0) { dnm.rem.splice(x, 1); dnm.add.splice(y, 1); }
+  }
+  if (dnm.rem.length || dnm.add.length) F.push(['name', changeText(dnm)]);
   // look-alikes: invisible or direction-changing characters, and words mixing alphabets (a Cyrillic "а" in "pаypal")
   const ia2 = ta.filter(isInvis).map(t => t.t), ib2 = tb.filter(isInvis).map(t => t.t);
   if (!msEq(ia2, ib2)) {
@@ -2031,8 +2125,8 @@ function computeFlags(h, ia, ib, nearA, nearB) {
   const la = linkTargets(ta), lb = linkTargets(tb);
   if (!msEq(la, lb)) F.push(['link', changeText(msDiff(la, lb))]);
   const toA = ea.filter(w => TONE.has(w)), toB = eb.filter(w => TONE.has(w));
-  for (const t of ta) if (t.kind === K_P && (t.t.includes('!') || RE_EMOJI.test(t.t))) toA.push(t.t.includes('!') ? '!' : t.t);
-  for (const t of tb) if (t.kind === K_P && (t.t.includes('!') || RE_EMOJI.test(t.t))) toB.push(t.t.includes('!') ? '!' : t.t);
+  for (const t of ta) if (t.kind === K_P && (t.t.includes('!') || isEmoji(t.t))) toA.push(t.t.includes('!') ? '!' : t.t);
+  for (const t of tb) if (t.kind === K_P && (t.t.includes('!') || isEmoji(t.t))) toB.push(t.t.includes('!') ? '!' : t.t);
   if (!msEq(toA, toB)) F.push(['tone', changeText(msDiff(toA, toB))]);
   F.sort((p, q) => FLAG_ORDER.indexOf(p[0]) - FLAG_ORDER.indexOf(q[0]));
   h.flags = F.map(f => f[0]); h.finfo = F;
@@ -2072,7 +2166,7 @@ function punctSub(pa, pb, num) {
   const all = pa.concat(pb);
   if (num && all.every(p => CURRENCY.has(p))) return 'Currency changed';
   if (num && all.every(p => SIGNS.has(p) || p === '—')) return pa.length && pb.length ? 'Sign changed' : pa.length ? 'Sign removed' : 'Sign added';
-  const what = all.every(p => /^["'“”‘’«»„‟]$/.test(p)) ? 'Quotes' : all.every(p => /^[()[\]{}]$/.test(p)) ? 'Brackets' : all.every(p => RE_EMOJI.test(p)) ? 'Emoji' : 'Punctuation';
+  const what = all.every(p => /^["'“”‘’«»„‟]$/.test(p)) ? 'Quotes' : all.every(p => /^[()[\]{}]$/.test(p)) ? 'Brackets' : all.every(p => isEmoji(p)) ? 'Emoji' : 'Punctuation';
   return what + (!pa.length ? ' added' : !pb.length ? ' removed' : ' changed');
 }
 function classifyTok(h, ia, ib, nearA, nearB) {
@@ -2080,6 +2174,9 @@ function classifyTok(h, ia, ib, nearA, nearB) {
   const ta = ia.map(i => A.toks[i]), tb = ib.map(i => B.toks[i]);
   // a clause or list number that changed, and nothing else: renumbering
   if (ta.length && tb.length && ta.every(t => t.lbl) && tb.every(t => t.lbl)) { h.cat = 'format'; h.sub = 'Numbering'; h.numbering = true; return; }
+  // "(c)" and "©" are one sign set two ways, and so are "(R)" and "(TM)" and theirs
+  const sign = l => l.map(t => t.t).join('').replace(/\uFE0F/g, '').replace(/^\((c|r|tm)\)$/i, (m, x) => ({ c: '©', r: '®', tm: '™' })[x.toLowerCase()]);
+  if (ta.length && tb.length && ta.length + tb.length <= 6 && RE_SIGN.test(sign(ta)) && sign(ta) === sign(tb)) { h.cat = 'typo'; h.sub = 'Typography'; return; }
   computeFlags(h, ia, ib, nearA, nearB);
   if (h.reorder) {
     h.cat = 'order'; h.sub = 'Word order';
@@ -2339,8 +2436,8 @@ function classifyAll(A, B, hunks) {
       else if (h.meta === 'eol') h.sub = 'Line endings: ' + EOL_NAME[A.eol] + ' → ' + EOL_NAME[B.eol];
       else if (h.meta === 'bom') h.sub = A.bom ? 'Byte-order mark removed' : 'Byte-order mark added';
       else {
-        const sp = s => s.replace(/[  -   　]/g, ' ');
-        if (h.wa && h.wb && sp(h.wa) === sp(h.wb)) { h.cat = 'typo'; h.sub = /[  ]/.test(h.wa + h.wb) ? 'Non-breaking space' : 'Special space'; }
+        const sp = s => s.replace(/[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g, ' ');
+        if (h.wa && h.wb && sp(h.wa) === sp(h.wb)) { h.cat = 'typo'; h.sub = /[\u00A0\u202F]/.test(h.wa + h.wb) ? 'Non-breaking space' : 'Special space'; }
         else if (h.wa && h.wb && /\t/.test(h.wa + h.wb)) h.sub = 'Tab ↔ space';
         else h.sub = h.wa && h.wb ? (h.wa.length > h.wb.length ? 'Extra space removed' : 'Extra space added') : h.wa ? 'Space removed' : 'Space added';
       }
@@ -2355,7 +2452,11 @@ function classifyAll(A, B, hunks) {
       const ca = h.a.filter(t => A.toks[t].kind !== K_PB).length, cb = h.b.filter(t => B.toks[t].kind !== K_PB).length;
       const ns = l => l.length === 1 ? 'Sentence' : l.length + ' sentences';
       if (ca && cb) {
-        h.cat = 'rewrite'; h.sub = h.ua.length + h.ub.length > 2 ? 'Passage rewritten' : 'Sentence rewritten';
+        // a line of a few words put in place of another ("15 May 2018" → "7 March 2019", a table cell) is reworded:
+        // "Sentence rewritten" says too much of it
+        const few = (D, l) => { let w = 0; for (const t of l) if (isWord(D.toks[t]) && ++w > 3) return false; return true; };
+        if (few(A, h.a) && few(B, h.b)) h.cat = 'reword';
+        else { h.cat = 'rewrite'; h.sub = h.ua.length + h.ub.length > 2 ? 'Passage rewritten' : 'Sentence rewritten'; }
         computeFlags(h, h.a, h.b);
       } else if (ca) {
         h.cat = 'removed';
@@ -2506,7 +2607,7 @@ function compare(textA, textB, opt) {
   const lower = new Set(), caps = new Set(); // caps: words capitalized in mid-sentence, the evidence for a name
   for (const D of [A, B]) for (const t of D.toks) if (t.kind === K_W) { if (/^\p{Ll}/u.test(t.t)) lower.add(bare(t.k)); else if (t.cap) caps.add(bare(t.k)); }
   const smp = (A.text.slice(0, 100000) + B.text.slice(0, 100000)).normalize('NFD');
-  const letters = (smp.match(/\p{L}/gu) || []).length, marked = (smp.match(/\p{Script=Latin}[̀-ͯ]/gu) || []).length;
+  const letters = (smp.match(/\p{L}/gu) || []).length, marked = (smp.match(/\p{Script=Latin}[\u0300-\u036F]/gu) || []).length;
   CUR = { A, B, lower, caps, marks: letters ? marked / letters : 0 };
   let built;
   try { built = build(A, B, items, ctx); classifyAll(A, B, built.hunks); } finally { CUR = null; }
@@ -2921,7 +3022,7 @@ return {
 // The version is also written in the comment at the top of the file (the tests keep the two in step).
 // Diffy is made to be downloaded once and then used for months from someone's own computer, so nothing in it is a
 // clickable link and nothing in it needs the internet: an address is always plain text to copy.
-const VERSION = '1.0.2', SOURCE = 'github.com/krulsenpai/diffy';
+const VERSION = '1.0.3', SOURCE = 'github.com/krulsenpai/diffy';
 const ONLINE = /^https?:$/.test(location.protocol); // opened from a website, not from a file on this computer
 const TITLE = document.title; // the page's own title, put back whenever no comparison is on screen
 const E = Engine, CATS = E.CATS, esc = E.esc, vis = E.vis;
@@ -3387,7 +3488,7 @@ function snippet(h, max) {
   if (h.kind === 'para') return '<span class="ctx">…' + vis(E.contextBefore(M, h, 5)) + '</span> ' + (h.a.length ? '<del>¶</del>' : '<ins>¶</ins>');
   if (h.places) { // renumbering: one change for every number it touches
     const n = Math.min(3, h.a.length, h.b.length);
-    let s = '<span class="ctx">Clause or list numbers changed in ' + pl(h.places, 'place') + ': </span>';
+    let s = '<span class="ctx">Numbering changed in ' + pl(h.places, 'place') + ' (clauses, lists, footnotes or contents pages): </span>';
     for (let i = 0; i < n; i++) s += (i ? ', ' : '') + '<del>' + vis(M.A.toks[h.a[i]].t, true) + '</del> <span class="arrow">→</span> <ins>' + vis(M.B.toks[h.b[i]].t, true) + '</ins>';
     return s + (h.places > n ? '…' : '');
   }
@@ -3718,6 +3819,8 @@ async function zipEntry(u8, name) {
       const start = lh + 30 + dv.getUint16(lh + 26, true) + dv.getUint16(lh + 28, true), data = u8.subarray(start, start + size);
       if (method === 0) return data;
       if (method !== 8) return null;
+      // an older browser cannot unpack the file: say that, not that the file "isn't a Word document"
+      if (typeof DecompressionStream === 'undefined') { const err = new Error('This browser is too old to open Word files. Update it, or copy the text out of Word and paste it in.'); err.docx = true; throw err; }
       return new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
     }
     p += 46 + nl + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
@@ -3762,7 +3865,7 @@ function noteTexts(xml, p, notes) {
   for (const el of Array.from(doc.documentElement.children)) {
     if (el.localName !== 'footnote' && el.localName !== 'endnote') continue;
     if (/separator/i.test(wattr(el, 'type') || '')) continue;
-    notes.set(p + wattr(el, 'id'), wordParas(el, null, notes).filter(s => s.trim()).join(' '));
+    notes.set(p + wattr(el, 'id'), wordParas(el, null, notes).filter(s => s.trim()).join(' ').trim()); // (Word opens a note with a space)
   }
 }
 function docxText(xml, notes) {
@@ -3978,7 +4081,7 @@ function openHelp() {
     '<p class="lede">Paste or drop two drafts and press Compare. Go through the changes with J and K (or the list on the right) and <b>Accept</b> each one to use the revised wording or <b>Reject</b> it to keep the original. Then open <b>Final</b> to copy or download the text with your decisions applied. Changes you haven’t decided follow the “Undecided changes” choice there.</p>' +
     '<h3>Reading the marks</h3><div class="prose-sm"><span class="h"><del class="d">Struck red</del></span> was removed, <span class="h"><ins class="i">underlined green</ins></span> was added, blue is moved text with a “moved” tag at each end, and a yellow dot and underline flag a change that can alter the meaning. After a decision, an accepted change keeps a solid green underline and a rejected one a dashed red underline. ¶ marks a paragraph split or merge; · and ↵ mark spacing and line-break changes. Hidden characters show as small yellow badges such as <span class="ctl">ZWSP</span> or <span class="ctl">RLO</span>.</div>' +
     '<h3>Keyboard</h3><div class="keys">' + keys.map(([k, d]) => '<span>' + k.map(x => '<kbd>' + x + '</kbd>').join('') + '</span><span>' + d + '</span>').join('') + '</div>' +
-    '<h3>Files and exports</h3><div class="prose-sm">Drop a file on the left half of the window to load it as the original, on the right half as the revised text, or two files anywhere (the older becomes the original). Word files (<code>.docx</code>) open directly: tracked changes are read as accepted, hidden text is left out, and footnotes are numbered and listed at the end. The Export button above the text gives you the final text, a self-contained redline page and <code>CriticMarkup</code> with your decisions applied.</div>' +
+    '<h3>Files and exports</h3><div class="prose-sm">Drag a file over the window and it shows two halves, Original and Revised: drop the file on the one it belongs to. Or drop two files anywhere (the older becomes the original). Word files (<code>.docx</code>) open directly: tracked changes are read as accepted, hidden text is left out, and footnotes are numbered and listed at the end. The Export button above the text gives you the final text, a self-contained redline page and <code>CriticMarkup</code> with your decisions applied.</div>' +
     '<h3>What the categories mean</h3>' + cats('meaning') + cats('content') + cats('mech') +
     '<p class="note">Polarity, Obligation, Scope, Tone and Spelling go by English word lists. The comparison itself, and the flags for figures, links and look-alike characters, work in any language.</p>' +
     '<h3>About</h3><div class="prose-sm">Diffy ' + VERSION + ', free software under the GNU AGPL, version 3 only. The licence covers Diffy, not your documents: what you export is yours.<br><br>' +
@@ -4292,7 +4395,8 @@ try { history.replaceState({ diffy: 'compose' }, ''); } catch (e) { /* sandboxed
 // An address ending in "#example" opens straight onto the built-in example. (The part after # stays in the browser:
 // it is never sent to a server.)
 if (location.hash === '#example') loadExample();
-if (ONLINE) $('#onlineNote').hidden = false; // a copy opened from a file never shows this
+// a copy opened from a file never shows the note, and only that copy is "offline": on a website the button says "Private"
+if (ONLINE) { $('#onlineNote').hidden = false; $('#privBtn span').textContent = 'Private'; }
 updateCounts();
 $('#nojs').remove();
 })();
