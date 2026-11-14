@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Diffy 1.0.3: a private, offline, prose-aware diff tool. One file, no dependencies.
+  Diffy 1.0.4: a private, offline, prose-aware diff tool. One file, no dependencies.
   Source and newer versions: https://github.com/krulsenpai/diffy
   (Diffy cannot check for updates itself: it cannot reach the internet, by design.)
 
@@ -19,7 +19,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-l5YVGSPfeAQd6DVTT6xOlOvgEH5TCtDME4eorp+jGI4='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ecGA/dna+gEQjwKCQSoJ3GYzjsP84EQXrgO0bFngVtI='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
@@ -238,9 +238,6 @@ del,ins{text-decoration:none}
 .h .i.cx{background:var(--ins-bg)}
 .h.mv .ms,.h.mv .md{color:var(--mv);background:var(--mv-bg);text-decoration:none}
 .uni .h.mv .ms{text-decoration:line-through;text-decoration-color:var(--mv-line)}
-.h.mv .md.x{color:var(--ins);background:var(--ins-bg);text-decoration:underline;text-decoration-color:var(--ins-line)}
-.h.mv .ms.x{color:var(--del);background:var(--del-bg);text-decoration:line-through}
-.h.mv .d.x:not(.ms){color:var(--del);background:var(--del-bg)}
 /* an inline box, not an inline-block: a flag dot in front of the tag then stays on the tag's line too */
 .mvtag{display:inline;white-space:nowrap;font:600 10.5px/1 var(--sans);letter-spacing:.03em;text-transform:uppercase;color:var(--mv);background:var(--mv-bg);padding:3px 7px;border-radius:99px;margin:0 .35em 0 .1em;vertical-align:.18em;cursor:pointer;text-decoration:none!important}
 .mvtag:hover{outline:1.5px solid var(--mv-line)}
@@ -266,7 +263,7 @@ del,ins{text-decoration:none}
 .h.acc .i:not(.s){text-decoration-line:underline;text-decoration-style:solid;text-decoration-thickness:2px;text-decoration-color:var(--ins-line);text-underline-offset:.3em}
 .h.rej .d:not(.s){text-decoration-line:underline;text-decoration-style:dashed;text-decoration-thickness:2px;text-decoration-color:var(--del-line);text-underline-offset:.3em}
 .h.off .i:not(.s){text-decoration-line:underline;text-decoration-style:dotted;text-decoration-thickness:1px;text-decoration-color:var(--line-2);text-underline-offset:.3em}
-.uni .h.acc .d,.uni .h.off:not(.rej) .d,.uni .h.rej .i,.uni .h.mv.rej .d.x{display:none}
+.uni .h.acc .d,.uni .h.off:not(.rej) .d,.uni .h.rej .i{display:none}
 .uni .h.acc .pm.i,.uni .h.rej .pm.d{display:none}
 .uni .blk.acc.blk-mvs,.uni .blk.rej.blk-mvd,.uni .blk.off.blk-del:not(.rej),.uni .blk.off.blk-ins.rej,.uni .blk.off.blk-mvs:not(.rej){display:none}
 /* a decision that leaves no words behind (an accepted deletion, a rejected insertion) keeps a small caret where the
@@ -348,7 +345,7 @@ del,ins{text-decoration:none}
 .ci-state.acc{color:var(--ins)}.ci-state.rej{color:var(--del)}
 .ci-act button{width:26px;height:26px;border:0;border-radius:6px;background:none;color:var(--tx-3);cursor:pointer;display:grid;place-items:center}
 .ci-act button svg.ic{width:14px;height:14px}
-.ci-act button.goto svg.ic{transform:rotate(90deg)}
+button.goto svg.ic{transform:rotate(90deg)}
 .ci-act button:hover{background:var(--bg-3);color:var(--tx)}
 .ci-act button.on.acc{color:var(--ins);background:var(--ins-q)}
 .ci-act button.on.rej{color:var(--del);background:var(--del-q)}
@@ -358,7 +355,7 @@ del,ins{text-decoration:none}
 .ci-txt .ctx{color:var(--tx-4)}
 .ci-txt del{color:var(--del);background:var(--del-q);text-decoration-color:var(--del-line)}
 .ci-txt ins{color:var(--ins);background:var(--ins-q);text-decoration:none;border-bottom:1px solid var(--ins-line)}
-.ci-txt .mvq{color:var(--mv)}
+.mvq{color:var(--mv)}
 .ci.dec .ci-txt,.ci.dec .ci-flag{opacity:.55}
 .empty-list{padding:36px 22px;text-align:center;color:var(--tx-3)}
 .empty-list b{display:block;font:600 16px/1.3 var(--sans);color:var(--tx-2);margin-bottom:6px}
@@ -403,7 +400,7 @@ td.dl.up{color:var(--ins)}td.dl.dn{color:var(--del)}
 .hc-diff ins{color:var(--ins);background:var(--ins-q);text-decoration:none;border-bottom:1px solid var(--ins-line)}
 .hc-diff .cx{font-weight:700}
 .hc-diff .arrow{color:var(--tx-4);margin:0 4px;font-family:var(--sans)}
-.hc-act{display:flex;gap:6px;margin-top:11px}
+.hc-act{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
 .hc-act .btn{height:30px;font-size:12.5px;padding:0 10px;gap:6px}
 .hc-act .btn kbd{font-size:10px;padding:1px 4px}
 .hc-act .btn.acc.on{background:var(--ins-q);border-color:var(--ins-line);color:var(--ins)}
@@ -442,7 +439,7 @@ input[type=range]{accent-color:var(--accent);width:150px}
 .legend small{color:var(--tx-3)}
 .prose-sm{color:var(--tx-2);font-size:13.5px;line-height:1.6}
 .prose-sm code{font:12px var(--mono);background:var(--bg-3);padding:1px 5px;border-radius:5px}
-.privpop{position:fixed;z-index:60;top:52px;right:14px;width:360px;max-width:calc(100vw - 16px);padding:16px 18px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-lg),0 0 0 .5px var(--line-2);font-size:13px;line-height:1.55;color:var(--tx-2)}
+.privpop{position:fixed;z-index:60;top:52px;right:14px;width:360px;max-width:calc(100vw - 16px);max-height:calc(100% - 60px);overflow:auto;padding:16px 18px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-lg),0 0 0 .5px var(--line-2);font-size:13px;line-height:1.55;color:var(--tx-2)}
 .privpop h4{margin:0 0 8px;font:500 17px/1.3 var(--serif);color:var(--tx);display:flex;gap:8px;align-items:center}
 .privpop h4 svg.ic{color:var(--ins)}
 .privpop code{font:12px var(--mono);background:var(--bg-3);padding:1px 5px;border-radius:5px;overflow-wrap:anywhere}
@@ -812,6 +809,9 @@ const RE_SPC = /[\u00A0\u2007\u202F\u2009\u200A]/g;
 function normTypo(s) {
   return s.replace(RE_SQ, "'").replace(RE_DQ, '"').replace(RE_DASH, '-').replace(/…/g, '...').replace(RE_SPC, ' ');
 }
+// Invisible characters that can sit inside a word without ending it ("to[zero-width space]day", a soft hyphen): the
+// word stays one word and is compared without them, so what changed is the hidden character, not the word.
+const INWORD = String.raw`\u00AD\u200B-\u200D\u2060\uFEFF`, RE_INWORD = new RegExp('[' + INWORD + ']', 'g');
 function looseKey(t, kind) {
   if (kind === K_P) {
     if (/^[-‐-―−]+$/.test(t)) return '—';
@@ -819,7 +819,7 @@ function looseKey(t, kind) {
     return normTypo(t);
   }
   // accents are folded only on Latin letters (café = cafe), and ñ stays a letter of its own; other scripts keep their marks (й ≠ и)
-  return normTypo(t.normalize('NFKC')).toLowerCase().normalize('NFD')
+  return normTypo(t.replace(RE_INWORD, '').normalize('NFKC')).toLowerCase().normalize('NFD')
     .replace(/(\p{Script=Latin})([\u0300-\u036F]+)/gu, (m, b, mk) => b === 'n' && mk.includes('\u0303') ? b + '\u0303' : b).normalize('NFC');
 }
 // characters that change what text means or how it displays while showing nothing (or looking like something else)
@@ -847,7 +847,7 @@ function lemma(w) { return IRR[w] || stem(w); }
 /* ---------- tokenizer ---------- */
 // Every alternative is linear: bounded quantifiers mean a run of "+" or "." can't make the email or URL pattern rescan the text.
 // groups: 1 URL, 2 email, 3 emoji (whole ZWJ / skin-tone / flag sequences), 4 number, 5 word, 6 whitespace, 7 anything else
-const RE_MAIN = new RegExp(String.raw`(https?:\/\/[^\s<>"“”‘’()\[\]{}]{0,2047}[^\s<>"“”‘’()\[\]{}.,;:!?'])|([\w][\w.+-]{0,63}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8})|(\p{RI}\p{RI}|[#*0-9]\uFE0F?⃣|\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*)*)|(\p{N}+(?:[.,:]\p{N}+)*\p{L}*)|([\p{L}\p{M}\p{N}]+(?:['’‘\-‐‑.·][\p{L}\p{M}\p{N}]+)*)|([^\S\uFEFF]+)|(\.{2,}|[\-‐-―]{2,}|[!?]{2,}|_{2,}|\*{2,}|={2,}|~{2,}|[\s\S])`, 'uy');
+const RE_MAIN = new RegExp(String.raw`(https?:\/\/[^\s<>"“”‘’()\[\]{}]{0,2047}[^\s<>"“”‘’()\[\]{}.,;:!?'])|([\w][\w.+-]{0,63}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8})|(\p{RI}\p{RI}|[#*0-9]\uFE0F?⃣|\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*)*)|(\p{N}+(?:[.,:]\p{N}+)*\p{L}*)|([\p{L}\p{M}\p{N}]+(?:['’‘\-‐‑.·${INWORD}][\p{L}\p{M}\p{N}]+)*)|([^\S\uFEFF]+)|(\.{2,}|[\-‐-―]{2,}|[!?]{2,}|_{2,}|\*{2,}|={2,}|~{2,}|[\s\S])`, 'uy');
 const RE_NOSPACE = /[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Thai}\p{sc=Lao}\p{sc=Khmer}\p{sc=Myanmar}]/u;
 const SEG = (typeof Intl !== 'undefined' && Intl.Segmenter) ? new Intl.Segmenter(undefined, { granularity: 'word' }) : null;
 const splitNoSpace = t => SEG ? Array.from(SEG.segment(t), s => s.segment) : Array.from(t);
@@ -2054,6 +2054,15 @@ function isName(D, t, loose) {
 // (In a heading set in Title Case every word is followed by a capital, so there the next word is no support: t.head.)
 function capNext(D, t) { const nx = D.toks[t.i + 1]; return !!nx && nx.kind === K_W && /^\p{Lu}/u.test(nx.t) && joined(nx); }
 const isInvis = t => t.kind === K_P && (RE_INVIS.test(t.t) || RE_BIDI.test(t.t));
+// What a change did to hidden characters (on their own, or inside a word), or null when it left them as they were.
+function hiddenNote(ta, tb) {
+  const hidden = l => { const out = []; for (const t of l) for (const c of t.t) if (RE_INVIS.test(c) || RE_BIDI.test(c)) out.push(c); return out; };
+  const ha = hidden(ta), hb = hidden(tb);
+  if (msEq(ha, hb)) return null;
+  const d = msDiff(ha, hb), list = l => [...new Set(l)].map(c => cpName(c) + ' (U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0') + ')').join(', ');
+  const bidi = d.add.concat(d.rem).some(c => RE_BIDI.test(c));
+  return (d.add.length ? 'Hidden character added: ' + list(d.add) : 'Hidden character removed: ' + list(d.rem)) + (bidi ? '. It changes the order text is displayed in.' : '. It is invisible on screen.');
+}
 const RE_DOMAIN = /^(?:[\p{L}\p{N}-]+\.)+\p{L}{2,}$/u;
 function linkTargets(toks) {
   const out = [];
@@ -2113,12 +2122,8 @@ function computeFlags(h, ia, ib, nearA, nearB) {
   }
   if (dnm.rem.length || dnm.add.length) F.push(['name', changeText(dnm)]);
   // look-alikes: invisible or direction-changing characters, and words mixing alphabets (a Cyrillic "а" in "pаypal")
-  const ia2 = ta.filter(isInvis).map(t => t.t), ib2 = tb.filter(isInvis).map(t => t.t);
-  if (!msEq(ia2, ib2)) {
-    const d = msDiff(ia2, ib2), list = l => [...new Set(l)].map(c => cpName(c) + ' (U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0') + ')').join(', ');
-    const bidi = d.add.concat(d.rem).some(c => RE_BIDI.test(c));
-    F.push(['lookalike', (d.add.length ? 'Hidden character added: ' + list(d.add) : 'Hidden character removed: ' + list(d.rem)) + (bidi ? '. It changes the order text is displayed in.' : '. It is invisible on screen.')]);
-  }
+  const hn = hiddenNote(ta, tb);
+  if (hn) F.push(['lookalike', hn]);
   const mixed = ws => ws.filter(t => scriptsOf(t.t).size > 1).map(t => t.t);
   const ma = mixed(wa), mb = mixed(wb);
   if (!msEq(ma, mb)) { const w = (mb.length ? mb : ma)[0]; F.push(['lookalike', qt(w) + ' mixes ' + [...scriptsOf(w)].join(' and ') + ' letters that look alike']); }
@@ -2143,8 +2148,11 @@ function classifyMod(h, a, b) {
   if (a.kind === K_M) { h.cat = 'format'; h.sub = 'Markup style'; return; }
   // two symbols that compare as equal are the same mark set differently ("--" and "—"): typography, never spelling
   if (a.kind === K_P) { h.cat = 'typo'; h.sub = /["'‘-‟«»]/.test(a.t + b.t) ? 'Quote style' : /^[-‐-―−]+$/.test(a.t) ? 'Dash style' : 'Typography'; return; }
-  const x = normTypo(a.t.normalize('NFKC')), y = normTypo(b.t.normalize('NFKC'));
-  if (x === y) { h.cat = 'typo'; h.sub = /["'‘-‟«»]/.test(a.t + b.t) ? 'Quote style' : /[-‐-―−]/.test(a.t + b.t) ? 'Dash style' : 'Typography'; }
+  // the words are compared without the hidden characters inside them, which are flagged on their own whatever else
+  // changed ("today" → "to[zero-width space]day", "Today" → "to[zero-width space]day")
+  const x = normTypo(a.t.replace(RE_INWORD, '').normalize('NFKC')), y = normTypo(b.t.replace(RE_INWORD, '').normalize('NFKC')), hn = hiddenNote([a], [b]);
+  if (hn) addFlag(h, 'lookalike', hn);
+  if (x === y) { h.cat = 'typo'; h.sub = hn ? 'Hidden character ' + (a.t.search(RE_INWORD) < 0 ? 'added' : b.t.search(RE_INWORD) < 0 ? 'removed' : 'changed') : /["'‘-‟«»]/.test(a.t + b.t) ? 'Quote style' : /[-‐-―−]/.test(a.t + b.t) ? 'Dash style' : 'Typography'; }
   else if (x.toLowerCase() === y.toLowerCase()) { h.cat = 'case'; h.sub = 'Capitalization'; }
   else {
     h.cat = 'spelling'; h.sub = 'Accents';
@@ -2187,6 +2195,15 @@ function classifyTok(h, ia, ib, nearA, nearB) {
     if (na.length > 1 && !arrEq(na, nb)) addFlag(h, 'name', 'Changed places: ' + qList(na) + ' → ' + qList(nb));
     const fa = numPhrases(A, ia).sort((p, q) => p.at - q.at), fb = numPhrases(B, ib).sort((p, q) => p.at - q.at);
     if (fa.length > 1 && !arrEq(fa.map(p => p.key), fb.map(p => p.key))) addFlag(h, 'number', 'Changed places: ' + qList(fa.map(p => p.text)) + ' → ' + qList(fb.map(p => p.text)));
+    // Nor when a negation now negates another word: "may not sublet … must repair" → "may sublet … must not repair".
+    // (A negation that moved along with its clause still negates the same word.)
+    const negated = (D, idx) => idx.map(i => D.toks[i]).filter(t => isWord(t) && expand([bare(t.k)]).some(w => NEG.has(w))).map(t => {
+      let j = t.i + 1; while (j < D.toks.length && D.toks[j].u === t.u && !isWord(D.toks[j])) j++; // (in its own sentence)
+      const w = D.toks[j] && D.toks[j].u === t.u && isWord(D.toks[j]) ? D.toks[j] : null;
+      return { key: bare(t.k) + ' ' + (w ? bare(w.k) : ''), text: t.t + (w ? ' ' + w.t : '') };
+    });
+    const dn = diffBy(negated(A, ia), negated(B, ib));
+    if (dn.rem.length || dn.add.length) addFlag(h, 'polarity', 'Negation moved: ' + qList(dn.rem) + ' → ' + qList(dn.add));
     return;
   }
   const wa = ta.filter(isWord), wb = tb.filter(isWord);
@@ -2308,32 +2325,9 @@ function build(A, B, items, ctx) {
     }
     x = y;
   }
-  // 3. inner diff of moved blocks
-  for (const h of hunks) {
-    if (h.kind !== 'move') continue;
-    h.src.sort((p, q) => p - q); h.dst.sort((p, q) => p - q);
-    const srcAll = [], dstAll = [];
-    for (const z of h.src) { const u = A.units[items[z].a[0]]; for (let t = u.t0; t < u.t1; t++) srcAll.push(t); }
-    for (const z of h.dst) { const u = B.units[items[z].b[0]]; for (let t = u.t0; t < u.t1; t++) dstAll.push(t); }
-    const runs = cleanupRuns(diffRuns(srcAll.filter(t => A.toks[t].kind !== K_PB), dstAll.filter(t => B.toks[t].kind !== K_PB), A, B, ctx), A, B);
-    const innerA = new Map(), seq = []; let dp = 0, edits = 0;
-    const flushTo = bt => { while (dp < dstAll.length && dstAll[dp] !== bt) seq.push({ k: '+', b: dstAll[dp++], inner: 'eq' }); if (dp < dstAll.length) dp++; };
-    h.innerDel = []; h.innerIns = [];
-    for (const R of runs) {
-      if (R.op === 0) { R.a.forEach((x, q) => { innerA.set(x, 'eq'); flushTo(R.b[q]); seq.push({ k: '+', b: R.b[q], inner: 'eq' }); }); continue; }
-      // a list item that moved gets a new number with its new place: that alone doesn't make it "moved & edited"
-      if (!(R.a.every(x => A.toks[x].lbl) && R.b.every(y => B.toks[y].lbl))) edits++;
-      for (const x of R.a) { innerA.set(x, 'del'); h.innerDel.push(x); seq.push({ k: '-', a: x, dup: true, inner: 'del' }); }
-      for (const y of R.b) { flushTo(y); h.innerIns.push(y); seq.push({ k: '+', b: y, inner: 'ins' }); }
-    }
-    while (dp < dstAll.length) seq.push({ k: '+', b: dstAll[dp++], inner: 'eq' });
-    h.srcAll = srcAll; h.innerA = innerA; h.seq = seq; h.edits = edits; h.a = srcAll; h.b = dstAll;
-  }
-  // 4. emit entries in reading order
-  const emitPair = it => {
-    const ta = [], tb = [];
-    for (const u of it.a) for (let t = A.units[u].t0; t < A.units[u].t1; t++) ta.push(t);
-    for (const u of it.b) for (let t = B.units[u].t0; t < B.units[u].t1; t++) tb.push(t);
+  // Two stretches of text that line up, compared word by word: their changes are made, and an entry for each of their
+  // tokens goes to out.
+  const emitPair = (ta, tb, out) => {
     const runs = cleanupRuns(diffRuns(ta, tb, A, B, ctx), A, B), R = runs.length;
     // changes held together by a pair of delimiters ("**…**", quotes, brackets, the two halves of a link) are one
     // change, so accepting half of it can't leave an unbalanced "**" or quote behind
@@ -2367,8 +2361,8 @@ function build(A, B, items, ctx) {
       if (X.op === 0) {
         X.a.forEach((x, q) => {
           const y = X.b[q];
-          if (A.toks[x].t !== B.toks[y].t) { const h = mk('mod'); h.a.push(x); h.b.push(y); entries.push({ k: '~', a: x, b: y, h: h.id }); }
-          else entries.push({ k: '=', a: x, b: y });
+          if (A.toks[x].t !== B.toks[y].t) { const h = mk('mod'); h.a.push(x); h.b.push(y); out.push({ k: '~', a: x, b: y, h: h.id }); }
+          else out.push({ k: '=', a: x, b: y });
         });
         continue;
       }
@@ -2377,20 +2371,49 @@ function build(A, B, items, ctx) {
       const P = runs[r - 1], N = runs[r + 1];
       if (P && P.op === 0) { h.nearA.push(P.a[P.a.length - 1]); h.nearB.push(P.b[P.b.length - 1]); }
       if (N && N.op === 0) { h.nearA.push(N.a[0]); h.nearB.push(N.b[0]); }
-      for (const x of X.a) { h.a.push(x); entries.push({ k: '-', a: x, h: h.id }); }
-      for (const y of X.b) { h.b.push(y); entries.push({ k: '+', b: y, h: h.id }); }
+      for (const x of X.a) { h.a.push(x); out.push({ k: '-', a: x, h: h.id }); }
+      for (const y of X.b) { h.b.push(y); out.push({ k: '+', b: y, h: h.id }); }
     }
     for (const h of hOf.values()) h.reorder = h.a.some(x => isWord(A.toks[x])) && h.b.some(y => isWord(B.toks[y])) && sameWords();
   };
+  // 3. Moved text is compared word by word like any other, so an edit made on the way is a change of its own, decided
+  //    apart from the move. Its entries are written at both of its places, each tagged with the move (m) and the place
+  //    (mv): the move decides which place the text stands in, each edit what it says there. The move's own entries are
+  //    the paragraph breaks it carries.
+  const toksOf = (D, us) => { const l = []; for (const u of us) for (let t = D.units[u].t0; t < D.units[u].t1; t++) l.push(t); return l; };
+  for (const h of hunks) {
+    if (h.kind !== 'move') continue;
+    h.src.sort((p, q) => p - q); h.dst.sort((p, q) => p - q);
+    const srcAll = toksOf(A, h.src.map(z => items[z].a[0])), dstAll = toksOf(B, h.dst.map(z => items[z].b[0]));
+    const k0 = hunks.length, inner = [];
+    emitPair(srcAll.filter(t => A.toks[t].kind !== K_PB), dstAll.filter(t => B.toks[t].kind !== K_PB), inner);
+    // a list item that moved gets a new number with its new place: that alone doesn't make it "moved & edited"
+    h.edits = 0;
+    for (let k = k0; k < hunks.length; k++) if (!(hunks[k].a.every(t => A.toks[t].lbl) && hunks[k].b.every(t => B.toks[t].lbl))) h.edits++;
+    const place = (D, all, mv) => {
+      const out = [], pbs = all.filter(t => D.toks[t].kind === K_PB), side = D === A ? 'a' : 'b';
+      let p = 0;
+      const pb = () => { const t = pbs[p++]; out.push(D === A ? { k: '-', a: t, h: h.id, m: h.id, mv } : { k: '+', b: t, h: h.id, m: h.id, mv }); };
+      for (const e of inner) {
+        if (e[side] != null) while (p < pbs.length && pbs[p] < e[side]) pb();
+        out.push(Object.assign({ m: h.id, mv }, e));
+      }
+      while (p < pbs.length) pb();
+      return out;
+    };
+    h.at = { src: place(A, srcAll, 'src'), dst: place(B, dstAll, 'dst') };
+    h.a = srcAll; h.b = dstAll;
+  }
+  // 4. emit entries in reading order
   for (let x = 0; x < n; x++) {
     const it = items[x];
-    if (it.k === 'pair' || it.k === 'eof') { emitPair(it); continue; }
+    if (it.k === 'pair' || it.k === 'eof') { emitPair(toksOf(A, it.a), toksOf(B, it.b), entries); continue; }
     if (it.k === 'pb') { entries.push({ k: '=', a: A.units[it.a[0]].t0, b: B.units[it.b[0]].t0 }); continue; }
     const h = hunks[it.h];
     if (h.kind === 'move') {
       if (h.down === undefined) h.down = it.k === 'del'; // its old place comes first in reading order: the text moved down
-      if (it.k === 'del' && !h._s) { h._s = 1; for (const t of h.srcAll) entries.push({ k: '-', a: t, h: h.id, mv: 'src', inner: A.toks[t].kind === K_PB ? 'eq' : h.innerA.get(t) }); }
-      if (it.k === 'ins' && !h._d) { h._d = 1; for (const s of h.seq) entries.push(Object.assign({ h: h.id, mv: 'dst' }, s)); }
+      const at = it.k === 'del' ? 'src' : 'dst';
+      if (h.at[at]) { for (const e of h.at[at]) entries.push(e); h.at[at] = null; }
       continue;
     }
     const u = unitOf(it);
@@ -2400,17 +2423,18 @@ function build(A, B, items, ctx) {
     }
   }
   // 5. whitespace between otherwise-equal tokens. Spacing inside a line is a change of its own. Line breaks,
-  //    indentation and blank lines (wrapping) form one document-wide layout change. Right after a change, the
-  //    whitespace simply follows whichever side is kept.
+  //    indentation and blank lines (wrapping) form one document-wide layout change. Right after a change, or after
+  //    moved text, the whitespace simply follows whichever side is kept. (Moved text itself keeps the spacing of the
+  //    draft whose place it stands in.)
   let L = null;
   const layout = () => { if (!L) { L = mk('space', 'space'); L.layout = true; L.places = 0; } L.places++; return L.id; };
   for (let x = 0; x < entries.length; x++) {
     const e = entries[x];
-    if (e.k !== '=' && e.k !== '~') continue;
+    if ((e.k !== '=' && e.k !== '~') || e.mv) continue;
     const ta = A.toks[e.a], tb = B.toks[e.b], brk = ta.kind === K_PB || ta.kind === K_EOF;
     if (ta.pre === tb.pre && (!brk || ta.sep === tb.sep)) continue;
     const prev = entries[x - 1];
-    if (prev && prev.k !== '=' && prev.k !== '~') { if (prev.h != null) e.ph = prev.h; continue; }
+    if (prev && (prev.mv || (prev.k !== '=' && prev.k !== '~'))) { const p = prev.mv ? prev.m : prev.h; if (p != null) e.ph = p; continue; }
     if (brk || ta.first || tb.first) { e.ph = layout(); continue; }
     const sa = wsSig(ta), sb = wsSig(tb);
     if (sa === sb) { e.ph = layout(); continue; }
@@ -2446,8 +2470,8 @@ function classifyAll(A, B, hunks) {
     } else if (h.kind === 'move') {
       h.cat = 'moved';
       // a paragraph break that came along doesn't make one sentence a paragraph: a whole paragraph has to have moved
+      // (an edit made on the way is a change of its own, with its own flags)
       h.sub = (holdsPara(A, h.a) ? 'Paragraph moved' : 'Sentence moved') + (h.edits ? ' & edited' : '');
-      if (h.edits) computeFlags(h, h.innerDel, h.innerIns);
     } else if (h.kind === 'unit') {
       const ca = h.a.filter(t => A.toks[t].kind !== K_PB).length, cb = h.b.filter(t => B.toks[t].kind !== K_PB).length;
       const ns = l => l.length === 1 ? 'Sentence' : l.length + ' sentences';
@@ -2621,12 +2645,16 @@ function compare(textA, textB, opt) {
     for (const e of entries) { if (gone.has(e.h)) e.h = keep.id; if (gone.has(e.ph)) e.ph = keep.id; }
     keep.places = renum.length;
   }
-  entries.forEach((e, x) => { if (e.h != null && hunks[e.h].first < 0) hunks[e.h].first = x; if (e.ph != null && hunks[e.ph].first < 0) hunks[e.ph].first = x; });
+  // (a move starts where the first entry tagged with it is, which may be a word that stayed the same; an edit made to
+  // moved text starts where it is drawn, at the new place, also when the old place comes first)
+  const firstAt = (id, x) => { if (id != null && hunks[id].first < 0) hunks[id].first = x; };
+  entries.forEach((e, x) => { firstAt(e.mv === 'src' && e.h !== e.m ? null : e.h, x); firstAt(e.ph, x); firstAt(e.m, x); });
   for (const h of hunks) if (h.first < 0 && h.kind === 'space') h.first = entries.length; // document-wide: line endings, leading blank lines
   const order = hunks.filter(h => h.first >= 0).sort((p, q) => p.first - q.first || p.id - q.id).map(h => h.id);
   order.forEach((id, i) => { hunks[id].ord = i; });
   A.ent = new Int32Array(A.toks.length).fill(-1); B.ent = new Int32Array(B.toks.length).fill(-1);
-  entries.forEach((e, x) => { if (e.a != null && !e.dup) A.ent[e.a] = x; if (e.b != null) B.ent[e.b] = x; });
+  // moved text is written at both of its places: a token of the original belongs to its old place, one of the revision to its new place
+  entries.forEach((e, x) => { if (e.a != null && e.mv !== 'dst') A.ent[e.a] = x; if (e.b != null && e.mv !== 'src') B.ent[e.b] = x; });
   // similarity, by words (or by symbols for texts without any words, such as a row of emoji)
   let wA = 0, wB = 0;
   for (const t of A.toks) if (isWord(t)) wA++;
@@ -2635,10 +2663,11 @@ function compare(textA, textB, opt) {
   let cA = 0, cB = 0, match = 0, added = 0, removed = 0;
   for (const t of A.toks) if (counts(t)) cA++;
   for (const t of B.toks) if (counts(t)) cB++;
+  // (and counted once: the original's words at the old place, the revision's at the new one)
   for (const e of entries) {
-    if (e.k === '=' || e.k === '~') { if (counts(A.toks[e.a])) match++; }
-    else if (e.k === '-' && !e.dup) { if (counts(A.toks[e.a])) { if (e.inner === 'eq') match++; else if (isWord(A.toks[e.a])) removed++; } }
-    else if (e.k === '+') { if (isWord(B.toks[e.b]) && e.inner !== 'eq') added++; }
+    if (e.k === '=' || e.k === '~') { if (e.mv !== 'dst' && counts(A.toks[e.a])) match++; }
+    else if (e.k === '-') { if (e.mv !== 'dst' && isWord(A.toks[e.a])) removed++; }
+    else if (e.mv !== 'src' && isWord(B.toks[e.b])) added++;
   }
   for (const h of hunks) h.sig = h.cat + '\u0001' + h.a.map(t => A.toks[t].k).join(' ') + '\u0001' + h.b.map(t => B.toks[t].k).join(' ');
   const meta = k => { const h = hunks.find(x => x.meta === k); return h ? h.id : null; };
@@ -2663,10 +2692,11 @@ function assemble(M, isNew, fmtNew, mark) {
   const txt = t => t.kind === K_PB || t.kind === K_EOF ? t.sep : t.t;
   const brk = t => t.kind === K_PB || t.kind === K_EOF;
   const sepBefore = (D, i) => { const p = D.toks[i - 1]; return p && p.kind === K_PB ? p.pre + p.sep : D.mode === 'blank' ? '\n\n' : '\n'; };
-  const space = (ta, tb, ia, ib, ph) => {
+  // (moved text keeps the spacing of the draft whose place it stands in)
+  const space = (ta, tb, ia, ib, e) => {
     const adjA = !!ta && ia === la + 1, adjB = !!tb && ib === lb + 1;
     let t = null;
-    if (adjA && adjB) t = (ph != null ? isNew(hunks[ph]) : fmtNew) ? tb : ta;
+    if (adjA && adjB) t = (e.mv ? e.mv === 'dst' : e.ph != null ? isNew(hunks[e.ph]) : fmtNew) ? tb : ta;
     else if (adjA) t = ta; else if (adjB) t = tb;
     if (t) return [t, t.pre];
     t = tb && (fmtNew || !ta) ? tb : ta;
@@ -2683,43 +2713,69 @@ function assemble(M, isNew, fmtNew, mark) {
     if (t.kind === K_EOF) { if (atStart && lastSep) out = out.slice(0, out.length - lastSep); out += (atStart ? '' : ws) + s; return; }
     out += ws + s; atStart = false; lastSep = 0;
   };
-  const note = H => {
-    const n = [];
-    if (H.kind === 'move') n.push(H._mvNote);
-    for (const f of H.finfo) n.push(CATS[f[0]].label + ': ' + f[1]);
-    return n.filter(Boolean).length ? '{>>' + n.filter(Boolean).join('; ') + '<<}' : '';
+  const flags = H => H.finfo.map(f => CATS[f[0]].label + ': ' + f[1]);
+  // Moved text stands at one of its two places: the new one if its move is taken, the old one if not.
+  const here = e => !e.mv || (e.mv === 'dst') === isNew(hunks[e.m]);
+  // One CriticMarkup group, from entry x on. g.a and g.b: the old and the new text; g.notes: what the comment says.
+  const group = x => {
+    const e = entries[x], g = { a: '', b: '', lastA: -1, lastB: -1, y: x, notes: [] };
+    const add = (D, i) => { const t = D.toks[i]; if (D === A) { g.a += t.pre + txt(t); g.lastA = i; } else { g.b += t.pre + txt(t); g.lastB = i; } };
+    if (!e.mv || !mark(hunks[e.m])) {
+      // the run of an open change's entries at one place
+      for (; g.y < entries.length && entries[g.y].h === e.h && entries[g.y].k !== '=' && entries[g.y].mv === e.mv; g.y++) {
+        const f = entries[g.y];
+        if (f.k !== '+') add(A, f.a);
+        if (f.k !== '-') add(B, f.b);
+      }
+      g.notes = flags(hunks[e.h]);
+      return g;
+    }
+    // One place of an open move: the text as it stands there if the move is taken (the new place) or refused (the
+    // old one). An open edit inside it goes along: refused at the old place, taken at the new one.
+    const dst = e.mv === 'dst', kids = new Set();
+    let s = '';
+    for (; g.y < entries.length && entries[g.y].m === e.m && entries[g.y].mv === e.mv; g.y++) {
+      const f = entries[g.y], C = f.h != null && f.h !== f.m ? hunks[f.h] : null;
+      const take = C ? (mark(C) ? dst : isNew(C)) : dst; // (no change of its own: a word that stayed, or a paragraph break the move carries)
+      if (C && mark(C)) kids.add(C);
+      if (f.k !== '=' && f.k !== '~' && (f.k === '+') !== take) continue;
+      const i = take ? f.b : f.a, t = (take ? B : A).toks[i];
+      s += t.pre + txt(t);
+      if (take) g.lastB = i; else g.lastA = i;
+    }
+    // the whole place is one suggestion, whichever draft each of its words came from
+    if (dst) g.b = s; else g.a = s;
+    g.notes = [dst ? 'moved here' : 'moved from here'];
+    for (const C of kids) for (const n of flags(C)) g.notes.push(n);
+    return g;
   };
   for (let x = 0; x < entries.length; x++) {
     const e = entries[x];
     const H = e.h != null ? hunks[e.h] : null;
-    if (mark && H && e.k !== '=' && mark(H)) {
-      // one CriticMarkup group: the run of this change's entries
-      let a = '', b = '', y = x, lastA = -1, lastB = -1;
-      for (; y < entries.length && entries[y].h === e.h && entries[y].k !== '='; y++) {
-        const f = entries[y];
-        if (f.k === '~') { a += A.toks[f.a].pre + A.toks[f.a].t; b += B.toks[f.b].pre + B.toks[f.b].t; lastA = f.a; lastB = f.b; }
-        else if (f.k === '-') { if (!f.dup) { a += A.toks[f.a].pre + txt(A.toks[f.a]); lastA = f.a; } }
-        else { b += B.toks[f.b].pre + txt(B.toks[f.b]); lastB = f.b; }
-      }
+    let g = null;
+    if (mark && e.mv && mark(hunks[e.m])) g = group(x);
+    else if (!here(e)) continue;
+    else if (mark && H && e.k !== '=' && mark(H)) g = group(x);
+    if (g) {
+      let { a, b } = g;
       if (atStart) { a = a.replace(/^[ \t]+/, ''); b = b.replace(/^[ \t]+/, ''); }
       const lead = a && b ? (/^\s+/.exec(a) || [''])[0] : '';
       if (lead && b.startsWith(lead)) { out += lead; a = a.slice(lead.length); b = b.slice(lead.length); }
-      if (H.kind === 'move') H._mvNote = entries[x].mv === 'src' ? 'moved from here' : 'moved here';
       if (a && b) out += '{~~' + a + '~>' + b + '~~}'; else if (a) out += '{--' + a + '--}'; else if (b) out += '{++' + b + '++}';
-      if (a || b) { out += note(H); atStart = false; lastSep = 0; }
-      if (lastA >= 0) la = lastA;
-      if (lastB >= 0) lb = lastB;
-      last = lastB >= 0 ? { D: B, i: lastB } : lastA >= 0 ? { D: A, i: lastA } : last;
+      if (a || b) { if (g.notes.length) out += '{>>' + g.notes.join('; ') + '<<}'; atStart = false; lastSep = 0; }
+      if (g.lastA >= 0) la = g.lastA;
+      if (g.lastB >= 0) lb = g.lastB;
+      last = g.lastB >= 0 ? { D: B, i: g.lastB } : g.lastA >= 0 ? { D: A, i: g.lastA } : last;
       afterGroup = true;
-      x = y - 1; continue;
+      x = g.y - 1; continue;
     }
     let ia = -1, ib = -1;
     if (e.k === '=' || e.k === '~') { ia = e.a; ib = e.b; }
-    else if (e.k === '-') { if (e.dup || isNew(H)) continue; ia = e.a; }
+    else if (e.k === '-') { if (isNew(H)) continue; ia = e.a; }
     else { if (!isNew(H)) continue; ib = e.b; }
     const ta = ia >= 0 ? A.toks[ia] : null, tb = ib >= 0 ? B.toks[ib] : null;
     const PH = e.ph != null ? hunks[e.ph] : null;
-    let [t, ws] = space(ta, tb, ia, ib, e.ph);
+    let [t, ws] = space(ta, tb, ia, ib, e);
     // spacing that differs right after a change (or in an open spacing change) is part of the suggestion too
     if (mark && ta && tb && ia === la + 1 && ib === lb + 1 && ta.pre !== tb.pre && (afterGroup || (PH && PH.kind === 'space' && !PH.layout && mark(PH)))) {
       ws = ta.pre && tb.pre ? '{~~' + ta.pre + '~>' + tb.pre + '~~}' : ta.pre ? '{--' + ta.pre + '--}' : '{++' + tb.pre + '++}';
@@ -2758,8 +2814,11 @@ const tokHtml = (t, o, changed) => t.kind === K_M ? (changed || o.markup ? '<spa
 const preHtml = t => t.first || !t.pre ? '' : ' ';
 const wsMark = s => Array.from(s, c => c === '\t' ? '⇥' : c === ' ' ? '·' : '⍽').join('');
 
-// the arrow on a "moved" tag points at the text's other place: down from its old place when the text moved down
-const moveTag = (h, old) => 'moved ' + (old === !!h.down ? '↓' : '↑');
+// A "moved" tag names the text's other place, and its arrow points there: "moved to ↓" at its old place and "moved
+// from ↑" at its new one when the text moved down. (An arrow alone was read as the way the text went.)
+// old: the tag stands at the text's old place
+const tagHtml = (h, old) => '<span class="mvtag" data-goto="' + (old ? 'dst' : 'src') + '" data-h="' + h.id + '" role="button" tabindex="-1">' +
+  (old ? 'moved to ' : 'moved from ') + (old === !!h.down ? '↓' : '↑') + '</span>';
 
 function hunkClass(h, o) {
   let c = 'h c-' + h.cat + ' t-' + h.tier;
@@ -2783,9 +2842,8 @@ function Writer(M, o) {
   W.piece = (cls, s) => { if (!s) return; if (cls !== W.pc) { W.flush(); W.pc = cls; } W.pt += s; };
   W.close = () => { W.flush(); if (W.open >= 0) { W.html += '</span>'; W.open = -1; } };
   // The first mark of a change gets the class h0: its flag dot is drawn there, and the minimap and the keyboard go there.
-  // end: which end of a move this is ('src' or 'dst'); a move has a first mark at each of its two ends, so the dot
-  // shows at its new place as well as its old one. wrap: a mark that only holds the space after a change; it carries
-  // on a mark that is open and never counts as a first one.
+  // end: which end of a move this is ('src' or 'dst'); a move has a first mark at each of its two ends. wrap: a mark that
+  // only holds the space after a change; it carries on a mark that is open and never counts as a first one.
   W.openH = (id, end, wrap) => {
     if (W.open === id && (wrap || W.end === end)) return;
     W.close();
@@ -2819,7 +2877,17 @@ function spaceMark(W, ph, side) {
 }
 
 function renderUnified(M, o) {
-  const { A, B, entries, hunks } = M;
+  const { A, B, hunks } = M;
+  // Moved text is written at both of its places. Its words, and its edits at the place its move doesn't keep, are
+  // drawn as the move: struck at the old place, as moved at the new one. Its edits at the place the move keeps (the
+  // new one, unless the move is rejected) are drawn as changes of their own. ride, end: the move and the place.
+  const entries = [];
+  for (const e of M.entries) {
+    if (!e.mv) { entries.push(e); continue; }
+    const ride = { ride: e.m, end: e.mv }, kept = (e.mv === 'src') === (!!o.dec && o.dec(hunks[e.m]) === 'rej');
+    if (e.k !== '=' && e.h !== e.m && kept) entries.push(Object.assign(ride, { k: e.k, a: e.a, b: e.b, h: e.h }));
+    else if (e.mv === 'src' ? e.a != null : e.b != null) entries.push(Object.assign(ride, e.mv === 'src' ? { k: '-', a: e.a } : { k: '+', b: e.b }, { h: e.m, mv: e.mv }));
+  }
   const W = Writer(M, o), out = [];
   let blk = null;
   const skipPlus = new Set(), tagged = new Set();
@@ -2836,9 +2904,11 @@ function renderUnified(M, o) {
     }
     blk = null;
   };
+  // (a paragraph of moved text is one block of its move, edits and all)
   const noteBlk = e => {
-    if (!blk) blk = { ok: true, h: e.h, side: e.k, n: 0 };
-    if (e.k === '=' || e.k === '~' || e.h !== blk.h || e.k !== blk.side) blk.ok = false;
+    const id = e.ride != null ? e.ride : e.h, side = e.ride != null ? (e.end === 'src' ? '-' : '+') : e.k;
+    if (!blk) blk = { ok: true, h: id, side, n: 0 };
+    if ((e.ride == null && (e.k === '=' || e.k === '~')) || id !== blk.h || side !== blk.side) blk.ok = false;
     blk.n++;
   };
   for (let x = 0; x < entries.length; x++) {
@@ -2852,6 +2922,16 @@ function renderUnified(M, o) {
     }
     if (skipPlus.has(x)) continue;
     noteBlk(e);
+    let lead = false;
+    if (e.ride != null && !tagged.has(e.end + e.ride)) {
+      // one tag at each place of a move, in front of its first words (a paragraph break may come before them), with
+      // the space before them outside its mark
+      tagged.add(e.end + e.ride);
+      const t0 = e.k === '-' || (e.k === '~' && e.end === 'src') ? A.toks[e.a] : B.toks[e.b];
+      W.close(); W.piece(null, preHtml(t0));
+      W.openH(e.ride, e.end); W.raw(tagHtml(hunks[e.ride], e.end === 'src'));
+      W.hoist = { d: true, i: true }; lead = true;
+    }
     if (e.k === '=' || e.k === '~') {
       const ta = A.toks[e.a], tb = B.toks[e.b];
       if (e.ph != null) {
@@ -2862,19 +2942,19 @@ function renderUnified(M, o) {
         if (ph.kind === 'space') spaceMark(W, ph, 'u');
         else { W.piece('d s', preHtml(ta)); W.piece('i s', preHtml(tb)); }
         if (e.k !== '~' || e.ph !== e.h) W.close();
-      } else { W.close(); W.piece(null, preHtml(tb)); }
+      } else { W.close(); if (!lead) W.piece(null, preHtml(tb)); }
       if (e.k === '=') { W.close(); W.piece(null, tokHtml(tb, o, false)); }
       else { W.openH(e.h); wordPieces(W, ta, tb, o); }
       continue;
     }
     const h = hunks[e.h];
-    if ((W.open !== e.h || W.end !== e.mv) && (x === 0 || entries[x - 1].h !== e.h || entries[x - 1].mv !== e.mv || entries[x - 1].k === '=' || entries[x - 1].k === '~')) {
-      // start of a change run: pull a space that every outcome shares out of the marked span. (One end of a move is a
-      // run of its own. With the space left inside, the dot and the "moved" tag sat tight against the sentence before.)
+    if (!lead && (W.open !== e.h || W.end !== e.mv) && (x === 0 || entries[x - 1].h !== e.h || entries[x - 1].mv !== e.mv || entries[x - 1].k === '=' || entries[x - 1].k === '~')) {
+      // start of a change run: pull a space that every outcome shares out of the marked span. (One place of a move is
+      // a run of its own.)
       W.hoist = null;
       let y = x, fd = null, fi = null;
       for (; y < entries.length && (entries[y].k === '-' || entries[y].k === '+') && entries[y].h === e.h && entries[y].mv === e.mv; y++) {
-        if (entries[y].k === '-' && !entries[y].dup && !fd) fd = A.toks[entries[y].a];
+        if (entries[y].k === '-' && !fd) fd = A.toks[entries[y].a];
         if (entries[y].k === '+' && !fi) fi = B.toks[entries[y].b];
       }
       // what follows the run when its words are dropped: a space there, or the end of the paragraph, keeps the text tidy
@@ -2884,10 +2964,6 @@ function renderUnified(M, o) {
       if ((fd || fi) && okA && okB) { W.close(); W.piece(null, ' '); W.hoist = { d: !!fd, i: !!fi }; }
     }
     W.openH(e.h, e.mv);
-    if (e.mv && !tagged.has(e.mv + e.h)) { // one tag at each end of a move, on its first words (a paragraph break may come before them)
-      tagged.add(e.mv + e.h);
-      W.raw('<span class="mvtag ' + (e.mv === 'src' ? 'd' : 'i') + '" data-goto="' + (e.mv === 'src' ? 'dst' : 'src') + '" data-h="' + h.id + '" role="button" tabindex="-1">' + moveTag(h, e.mv === 'src') + '</span>');
-    }
     if (e.k === '-') {
       const t = A.toks[e.a];
       if (h.char && !e.mv) {
@@ -2902,13 +2978,13 @@ function renderUnified(M, o) {
       }
       // a space between two words of one run carries their mark too, so a deleted or added phrase is marked in one
       // piece instead of word by word; only the space in front of a run stays plain
-      const cls = 'd' + (e.mv === 'src' ? ' ms' : '') + (e.dup ? ' x' : '');
-      if (W.hoist && W.hoist.d && !e.dup) W.hoist.d = false; else W.piece(W.pc === cls ? cls : 'd s', preHtml(t));
+      const cls = 'd' + (e.mv === 'src' ? ' ms' : '');
+      if (W.hoist && W.hoist.d) W.hoist.d = false; else W.piece(W.pc === cls ? cls : 'd s', preHtml(t));
       W.piece(cls, tokHtml(t, o, true));
     } else {
-      const t = B.toks[e.b], cls = 'i' + (e.mv === 'dst' ? (e.inner === 'ins' ? ' md x' : ' md') : '');
+      const t = B.toks[e.b], cls = 'i' + (e.mv === 'dst' ? ' md' : '');
       if (W.hoist && W.hoist.i) W.hoist.i = false; else W.piece(W.pc === cls ? cls : 'i s', preHtml(t));
-      W.piece(cls, tokHtml(t, o, e.mv !== 'dst' || e.inner === 'ins'));
+      W.piece(cls, tokHtml(t, o, e.mv !== 'dst'));
     }
   }
   finishPara(false);
@@ -2917,10 +2993,18 @@ function renderUnified(M, o) {
 
 function renderSide(M, o, D, side, p, W) {
   const { entries, hunks, A, B } = M;
-  const P = D.paras[p];
+  const P = D.paras[p], end = side === 'a' ? 'src' : 'dst';
   for (let t = P.t0; t < P.t1; t++) {
-    const tok = D.toks[t], e = entries[D.ent[t]];
+    const tok = D.toks[t];
+    let e = entries[D.ent[t]], lead = false;
     if (!e) { W.close(); W.piece(null, preHtml(tok) + tokHtml(tok, o, false)); continue; }
+    if (e.mv) {
+      // Moved text: a tag where it starts in this paragraph, with the space before it outside its mark. Its words are
+      // drawn as the move, its edits as changes of their own.
+      const pe = t > P.t0 ? entries[D.ent[t - 1]] : null;
+      if (!pe || pe.m !== e.m) { W.close(); W.piece(null, preHtml(tok)); W.openH(e.m, end); W.raw(tagHtml(hunks[e.m], side === 'a')); lead = true; }
+      e = e.k === '=' || e.h === e.m ? { k: side === 'a' ? '-' : '+', h: e.m, mv: end } : { k: e.k, a: e.a, b: e.b, h: e.h };
+    }
     if (e.k === '=' || e.k === '~') {
       // Only a spacing change marks the space in front of a word. Space that merely follows another change is plain
       // here, because each column shows its own text: wrapped in that change's mark, it was often an empty mark, and
@@ -2928,27 +3012,23 @@ function renderSide(M, o, D, side, p, W) {
       const ph = e.ph != null ? hunks[e.ph] : null;
       W.close();
       if (ph && ph.kind === 'space') { W.openH(e.ph); spaceMark(W, ph, side); W.close(); }
-      else W.piece(null, preHtml(tok));
+      else if (!lead) W.piece(null, preHtml(tok));
       if (e.k === '=') W.piece(null, tokHtml(tok, o, false));
       else { W.openH(e.h); if (tok.kind === K_M) W.piece(side === 'a' ? 'd' : 'i', tokHtml(tok, o, true)); else charPieces(W, A.toks[e.a].t, B.toks[e.b].t, side); }
       continue;
     }
     const h = hunks[e.h];
     const runStart = W.open !== e.h;
-    const hoist = runStart && !tok.first && /\s/.test(tok.pre);
+    const hoist = !lead && runStart && !tok.first && /\s/.test(tok.pre);
     if (hoist) { W.close(); W.piece(null, ' '); }
     W.openH(e.h, e.mv);
-    if (e.mv && (t === P.t0 || D.ent[t - 1] < 0 || entries[D.ent[t - 1]].h !== e.h)) {
-      W.raw('<span class="mvtag" data-goto="' + (side === 'a' ? 'dst' : 'src') + '" data-h="' + h.id + '" role="button" tabindex="-1">' + moveTag(h, side === 'a') + '</span>');
-    }
     const charwise = h.char && !e.mv && tok.kind !== K_M;
-    const inner = e.mv && ((side === 'a' && e.inner === 'del') || (side === 'b' && e.inner === 'ins'));
-    const cls = (side === 'a' ? 'd' : 'i') + (e.mv ? (side === 'a' ? ' ms' : ' md') : '') + (inner ? ' x' : '');
-    if (!hoist) W.piece(!charwise && W.pc === cls ? cls : side === 'a' ? 'd s' : 'i s', preHtml(tok)); // as inline: one mark per run
+    const cls = (side === 'a' ? 'd' : 'i') + (e.mv ? (side === 'a' ? ' ms' : ' md') : '');
+    if (!hoist && !lead) W.piece(!charwise && W.pc === cls ? cls : side === 'a' ? 'd s' : 'i s', preHtml(tok)); // as inline: one mark per run
     if (charwise) {
       const other = side === 'a' ? B.toks[h.b[0]] : A.toks[h.a[0]];
       charPieces(W, side === 'a' ? tok.t : other.t, side === 'a' ? other.t : tok.t, side);
-    } else W.piece(cls, tokHtml(tok, o, !e.mv || inner));
+    } else W.piece(cls, tokHtml(tok, o, !e.mv));
   }
   const pbt = D.toks[P.t1];
   if (pbt && pbt.kind === K_PB) {
@@ -2989,21 +3069,23 @@ function textOf(D, list, max) {
   }
   return s.replace(/\s+/g, ' ').trim();
 }
-// a few words of unchanged context before a hunk (from the revised side)
+// a few words of unchanged context before a hunk (from the revised side), with "…" in front when its paragraph goes
+// on further back
 function contextBefore(M, h, nWords) {
   const { entries, B } = M;
-  let s = '', cnt = 0, gap = false, steps = 0;
-  for (let x = Math.min(h.first, entries.length) - 1; x >= 0 && cnt < nWords && steps < 200; x--, steps++) {
+  let s = '', cnt = 0, gap = false, steps = 0, x = Math.min(h.first, entries.length) - 1, start = false;
+  for (; x >= 0 && cnt < nWords && steps < 200 && !start; x--, steps++) {
     const e = entries[x];
-    if (e.k === '-') continue;
+    if (e.k === '-' || e.mv === 'src') continue; // (the old place of moved text holds no text of the revision)
     const t = B.toks[e.b];
-    if (t.kind === K_PB || t.kind === K_EOF) break;
+    if (t.kind === K_PB || t.kind === K_EOF) { start = true; break; }
     if (t.kind === K_M) { gap = gap || !!wsOf(t); continue; }
     s = t.t + (gap ? ' ' : '') + s;
     gap = !!wsOf(t) && !t.first;
+    start = !!t.first;
     if (isWord(t)) cnt++;
   }
-  return s;
+  return s && !start && x >= 0 ? '…' + s : s;
 }
 
 return {
@@ -3022,7 +3104,7 @@ return {
 // The version is also written in the comment at the top of the file (the tests keep the two in step).
 // Diffy is made to be downloaded once and then used for months from someone's own computer, so nothing in it is a
 // clickable link and nothing in it needs the internet: an address is always plain text to copy.
-const VERSION = '1.0.3', SOURCE = 'github.com/krulsenpai/diffy';
+const VERSION = '1.0.4', SOURCE = 'github.com/krulsenpai/diffy';
 const ONLINE = /^https?:$/.test(location.protocol); // opened from a website, not from a file on this computer
 const TITLE = document.title; // the page's own title, put back whenever no comparison is on screen
 const E = Engine, CATS = E.CATS, esc = E.esc, vis = E.vis;
@@ -3114,6 +3196,8 @@ function applyType() {
 const engineOpts = () => ({ paraMode: S.paraMode, markdown: S.markdown, threshold: S.threshold, moves: S.moves });
 
 /* ---------- toasts: stacked, so one can't wipe out another; errors stay longer and are announced right away ---------- */
+// a message goes when a new one of its kind comes, or when it is no longer true
+const dropToast = key => { for (const t of $$('.toast', $('#toasts'))) if (t.dataset.key === key) t.remove(); };
 function toast(msg, o = {}) {
   const box = $('#toasts'), el = document.createElement('div');
   el.className = 'toast' + (o.error ? ' err' : '');
@@ -3121,7 +3205,7 @@ function toast(msg, o = {}) {
   const tx = document.createElement('span'); tx.className = 'tx'; tx.textContent = msg; el.appendChild(tx);
   const key = o.key || (o.error ? 'error' : o.action ? 'action' : 'info');
   el.dataset.key = key;
-  for (const t of $$('.toast', box)) if (t.dataset.key === key) t.remove();
+  dropToast(key);
   const dismiss = () => { clearTimeout(el._t); el.remove(); };
   if (o.action) {
     const b = document.createElement('button'); b.textContent = o.action;
@@ -3316,7 +3400,7 @@ const textExt = () => /\.(md|markdown|mdown)$/i.test(st.names.b || st.names.a) ?
 function renderDoc() {
   hideCard(true);
   st.card.rest = true; // new text may now sit under a resting pointer: no hover card until the pointer moves
-  const M = st.M, o = { markup: S.markup, cls: stateCls };
+  const M = st.M, o = { markup: S.markup, cls: stateCls, dec: h => st.dec.get(h.id) };
   $('#finalBar').hidden = S.view !== 'final';
   $('#nav').style.visibility = S.view === 'final' ? 'hidden' : '';
   docEl.classList.toggle('is-split', S.view === 'split');
@@ -3485,7 +3569,7 @@ function snippet(h, max) {
     if (h.meta) return '<span class="ctx">' + esc(h.sub) + '.</span>';
     return '<span class="ctx">' + vis(E.contextBefore(M, h, 4)) + '</span> <ins>' + esc(h.sub.toLowerCase()) + '</ins>';
   }
-  if (h.kind === 'para') return '<span class="ctx">…' + vis(E.contextBefore(M, h, 5)) + '</span> ' + (h.a.length ? '<del>¶</del>' : '<ins>¶</ins>');
+  if (h.kind === 'para') return '<span class="ctx">' + vis(E.contextBefore(M, h, 5)) + '</span> ' + (h.a.length ? '<del>¶</del>' : '<ins>¶</ins>');
   if (h.places) { // renumbering: one change for every number it touches
     const n = Math.min(3, h.a.length, h.b.length);
     let s = '<span class="ctx">Numbering changed in ' + pl(h.places, 'place') + ' (clauses, lists, footnotes or contents pages): </span>';
@@ -3506,7 +3590,7 @@ function snippet(h, max) {
   const pa = a ? '<del>' + vis(a, true) + '</del>' : '', pb = b ? '<ins>' + vis(b, true) + '</ins>' : '';
   return (h.unit ? '' : ctxHtml(h)) + pa + (pa && pb ? ' <span class="arrow">→</span> ' : '') + pb;
 }
-function ctxHtml(h) { const c = E.contextBefore(st.M, h, 4); return c ? '<span class="ctx">…' + vis(c) + ' </span>' : ''; }
+function ctxHtml(h) { const c = E.contextBefore(st.M, h, 4); return c ? '<span class="ctx">' + vis(c) + ' </span>' : ''; }
 // A flagged change is headed by what makes it matter ("Numbers & dates") with the kind of edit ("Reworded") beside it;
 // any other change by its kind ("Quote style") with its category ("Typography"). Those are the names the filter chips
 // count it under, so the list and the filters agree.
@@ -3665,10 +3749,17 @@ function decide(ids, val) {
   afterDecide(ids);
 }
 function afterDecide(ids) {
-  if (S.view === 'final') renderDoc();
-  else if (ids.length > 150) { renderDoc(); renderList(); }
-  else { ids.forEach(refreshHunk); clearTimeout(st.mmT); st.mmT = setTimeout(buildMinimap, 120); }
+  // Inline, the edits in moved text are drawn at the place its move keeps, so deciding a move draws the text again
+  // (and keeps a card that was pinned open).
+  if (S.view === 'final' || ids.length > 150 || (S.view === 'inline' && ids.some(id => st.M.hunks[id].kind === 'move'))) {
+    const pin = !card.hidden && st.card.pinned ? st.card.id : -1;
+    renderDoc();
+    if (ids.length > 150) renderList(); else ids.forEach(refreshHunk);
+    const el = pin >= 0 && firstEl(pin);
+    if (el) showCard(pin, el, true);
+  } else { ids.forEach(refreshHunk); clearTimeout(st.mmT); st.mmT = setTimeout(buildMinimap, 120); }
   renderSummary(); updateNav();
+  if (st.vis.some(id => !st.dec.has(id))) dropToast('done'); // "Every shown change is reviewed" is no longer true
   if (!card.hidden) fillCard(st.card.id);
 }
 function undo() {
@@ -3725,7 +3816,7 @@ function fillCard(id) {
     flagHtml(h, 'hc-flag') +
     '<div class="hc-diff" dir="auto">' + snippet(h, 420) + '</div>' +
     '<div class="hc-act"><button class="btn acc' + (d === 'acc' ? ' on' : '') + '" data-act="acc" aria-pressed="' + (d === 'acc') + '">' + icon('check') + 'Accept <kbd>A</kbd></button><button class="btn rej' + (d === 'rej' ? ' on' : '') + '" data-act="rej" aria-pressed="' + (d === 'rej') + '">' + icon('x') + 'Reject <kbd>R</kbd></button>' +
-    (h.kind === 'move' ? '<button class="btn ghost" data-act="goto">Go to the other end</button>' : '') + '</div>';
+    (h.kind === 'move' ? '<button class="btn goto" data-act="goto">' + icon('swap') + 'Go to the other end <kbd>G</kbd></button>' : '') + '</div>';
 }
 function placeCard(anchor, evt) {
   const rects = anchor.getClientRects(); if (!rects.length) { hideCard(true); return; }
@@ -3938,7 +4029,7 @@ function baseName() {
 function exportRedline() {
   const css = $('style').textContent, r0 = css.indexOf(':root{');
   const root = css.slice(r0, css.indexOf('}', r0) + 1), marks = css.slice(css.indexOf('/* @redline-start'), css.indexOf('/* @redline-end */'));
-  const o = { markup: S.markup, cls: h => { const d = st.dec.get(h.id); return d ? ' ' + d : ''; } };
+  const dec = h => st.dec.get(h.id), o = { markup: S.markup, dec, cls: h => dec(h) ? ' ' + dec(h) : '' };
   const M = st.M, s = M.stats, n = M.order.length;
   const page = root + 'html{color-scheme:light}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 var(--sans)}.doc{padding:34px 24px 80px;font-family:var(--doc-font);font-size:var(--doc-size);line-height:1.72}.uni{max-width:var(--measure);margin:0 auto}.uni p{margin:0 0 1em;overflow-wrap:anywhere}' + marks +
     '.rl{max-width:var(--measure);margin:0 auto 28px;font:13px/1.6 var(--sans);color:var(--tx-3)}.rl h1{font:400 26px/1.2 var(--serif);color:var(--tx);margin:0 0 6px}.rl .lg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:12.5px}';
@@ -4078,7 +4169,7 @@ function openHelp() {
   const cats = t => '<details class="cats"><summary><span class="tdot t-' + t + '"></span>' + E.TIERS[t].label + '<small>' + esc(E.TIERS[t].desc) + (t === 'meaning' ? ', flagged with a yellow dot' : '') + '</small></summary><div class="legend">' + legend(t) + '</div></details>';
   openModal(
     '<h2 id="mTitle">How Diffy works<button class="icon-btn" data-close title="Close" aria-label="Close help"><i data-icon="x"></i></button></h2>' +
-    '<p class="lede">Paste or drop two drafts and press Compare. Go through the changes with J and K (or the list on the right) and <b>Accept</b> each one to use the revised wording or <b>Reject</b> it to keep the original. Then open <b>Final</b> to copy or download the text with your decisions applied. Changes you haven’t decided follow the “Undecided changes” choice there.</p>' +
+    '<p class="lede">Paste or drop two drafts and press Compare. Go through the changes with J and K (or the list of changes) and <b>Accept</b> each one to use the revised wording or <b>Reject</b> it to keep the original. Then open <b>Final</b> to copy or download the text with your decisions applied. Changes you haven’t decided follow the “Undecided changes” choice there.</p>' +
     '<h3>Reading the marks</h3><div class="prose-sm"><span class="h"><del class="d">Struck red</del></span> was removed, <span class="h"><ins class="i">underlined green</ins></span> was added, blue is moved text with a “moved” tag at each end, and a yellow dot and underline flag a change that can alter the meaning. After a decision, an accepted change keeps a solid green underline and a rejected one a dashed red underline. ¶ marks a paragraph split or merge; · and ↵ mark spacing and line-break changes. Hidden characters show as small yellow badges such as <span class="ctl">ZWSP</span> or <span class="ctl">RLO</span>.</div>' +
     '<h3>Keyboard</h3><div class="keys">' + keys.map(([k, d]) => '<span>' + k.map(x => '<kbd>' + x + '</kbd>').join('') + '</span><span>' + d + '</span>').join('') + '</div>' +
     '<h3>Files and exports</h3><div class="prose-sm">Drag a file over the window and it shows two halves, Original and Revised: drop the file on the one it belongs to. Or drop two files anywhere (the older becomes the original). Word files (<code>.docx</code>) open directly: tracked changes are read as accepted, hidden text is left out, and footnotes are numbered and listed at the end. The Export button above the text gives you the final text, a self-contained redline page and <code>CriticMarkup</code> with your decisions applied.</div>' +
@@ -4371,9 +4462,10 @@ function wire() {
       case '2': setView('split'); break;
       case '3': setView('final'); break;
       case 'g': {
-        const h = st.M.hunks[st.cur];
         if (S.view === 'final') break;
-        if (h && h.kind === 'move') jumpMove(st.cur, null); else toast('G jumps between the two ends of a moved passage. Select one first.', { key: 'goto' });
+        // the selected move, or else the one whose card is open (as A and R do)
+        const id = st.cur >= 0 ? st.cur : st.card.id, h = st.M.hunks[id];
+        if (h && h.kind === 'move') jumpMove(id, id === st.card.id ? st.card.anchor : null); else toast('G jumps between the two ends of a moved passage. Select one first.', { key: 'goto' });
         break;
       }
       case 'l': case 'L': togglePanel(); break;

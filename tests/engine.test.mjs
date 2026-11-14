@@ -59,12 +59,13 @@ test('printing uses the light palette whatever the theme', () => {
 test('the built-in example is classified as expected', () => {
   const M = E.compare(EX_A, EX_B, {});
   // "The damage occured…" stays where it was: its paragraph is split in front of it and the sentence is edited.
-  // (It was once read as moved, because paragraph breaks were lined up by position.) "A public meeting…" does move.
+  // (It was once read as moved, because paragraph breaks were lined up by position.) "A public meeting…" does move,
+  // and its date changed on the way: a change of its own.
   assert.deepEqual(labels(M), [
     'Reworded [number]', 'Reworded [scope]', 'Removed [tone]', 'Look-alike word [name, lookalike]', 'Quote style',
     'Reworded [modal]', 'Quote style', 'Contraction', 'UK/US spelling', 'Spelling',
     'Paragraph split', 'Spelling', 'Punctuation added', 'Added [scope]',
-    'Sentence moved & edited [number]', 'Added [polarity]', 'Reworded [polarity]',
+    'Sentence moved & edited', 'Reworded [number]', 'Added [polarity]', 'Reworded [polarity]',
   ]);
   assert.equal(M.stats.wordsA, 141);
   assert.equal(M.stats.wordsB, 145);
@@ -171,8 +172,16 @@ test('CriticMarkup with every change decided is just the merged text', () => {
 });
 
 /* ---------- regressions: bugs that were found and fixed ---------- */
-const moveTags = html => [...html.matchAll(/<span class="mvtag[^"]*" data-goto="(\w+)" data-h="(\d+)"[^>]*>moved (.)<\/span>/gu)].map(m => ({ to: m[1], id: +m[2], arrow: m[3] }));
+// (the tag is the move's own colour in both views: no class of an added or removed word)
+const moveTags = html => [...html.matchAll(/<span class="mvtag" data-goto="(\w+)" data-h="(\d+)"[^>]*>moved (to|from) (.)<\/span>/gu)].map(m => ({ to: m[1], id: +m[2], word: m[3], arrow: m[4] }));
 const arrowsById = tags => { const by = new Map(); for (const t of tags) by.set(t.id, (by.get(t.id) || '') + t.arrow); return by; };
+
+test('a move tag says where the text went, or where it came from', () => {
+  // "A public meeting…" moved up in the example: "moved from ↓" where it is now, "moved to ↑" where it was
+  const M = E.compare(EX_A, EX_B, {});
+  assert.deepEqual(moveTags(E.renderUnified(M, {})).map(t => 'moved ' + t.word + ' ' + t.arrow), ['moved from ↓', 'moved to ↑']);
+  for (const html of [E.renderUnified(M, {}), E.renderSplit(M, {})]) for (const t of moveTags(html)) assert.equal(t.word, t.to === 'dst' ? 'to' : 'from');
+});
 
 test('the arrows on a move point at each other, whichever way the text moved', () => {
   const [, a, b] = PAIRS.find(p => p[0] === 'paragraph moved'); // "Bravo…" moves down; in the example "A public meeting…" moves up
@@ -284,21 +293,75 @@ test('side by side: each column puts the flag dot on the first words of a change
   const dots = html => marks(html).filter(m => m.first && m.flagged).map(m => label(M.hunks[m.id]));
   const flagged = M.order.map(id => M.hunks[id]).filter(h => h.flags.length);
   // a flagged change has a dot in each column where it has words: "probably" was only removed and "not" only added,
-  // so each of those has one dot, and the others have two
+  // so each of those has one dot, and the others have two (the date changed in the moved sentence too)
   assert.deepEqual(dots(col.a).sort(), flagged.filter(h => h.a.length).map(label).sort());
   assert.deepEqual(dots(col.b).sort(), flagged.filter(h => h.b.length).map(label).sort());
-  assert.ok(!dots(col.a).includes('Added [polarity]') && !dots(col.b).includes('Removed [tone]') && dots(col.b).includes('Reworded [number]'));
+  assert.ok(!dots(col.a).includes('Added [polarity]') && !dots(col.b).includes('Removed [tone]') && dots(col.a).includes('Reworded [polarity]') && dots(col.b).includes('Reworded [polarity]'));
   // the dot of the moved "A public meeting…" once sat in front of "The committee will approve", which hadn't changed
   assert.ok(!marks(col.a).some(m => m.blank) && !marks(col.b).some(m => m.blank), 'no mark without words');
   assert.match(col.a, /<p[^>]*>The committee will approve/);
 });
 
-test('inline: a flagged move has its dot at the new place as well as the old one', () => {
+test('an edit made to moved text is a change of its own, decided apart from the move', () => {
+  const M = E.compare(EX_A, EX_B, {}), mv = M.hunks.find(h => h.kind === 'move'), ed = M.hunks[M.order[M.order.indexOf(mv.id) + 1]];
+  assert.deepEqual([label(mv), label(ed), ed.finfo[0][1]], ['Sentence moved & edited', 'Reworded [number]', '“4” → “14”']);
+  // the move decides where the sentence stands, the edit what its date is
+  const end = (m, e) => E.merge(M, h => h === mv ? m : h === ed ? e : true, true).trim().split('\n').pop();
+  const meeting = n => 'A public meeting is scheduled for March ' + n + ', and everyone is welcome to attend.', rest = 'The committee will not approve the funding unless the community supports it. Volunteers have already offered to paint the railings.';
+  assert.equal(end(true, true), meeting(14) + ' ' + rest);
+  assert.equal(end(true, false), meeting(4) + ' ' + rest);
+  assert.equal(end(false, true), rest + ' ' + meeting(14));
+  assert.equal(end(false, false), rest + ' ' + meeting(4));
+  // inline, the edit is drawn where the sentence stands: at its new place, or at its old one once the move is rejected
+  const at = dec => { const html = E.renderUnified(M, { dec }); return html.indexOf('<ins class="i">14</ins>') > html.indexOf('paint the railings') ? 'old' : 'new'; };
+  assert.equal(at(() => undefined), 'new');
+  assert.equal(at(h => h === mv ? 'acc' : undefined), 'new');
+  assert.equal(at(h => h === mv ? 'rej' : undefined), 'old');
+  // CriticMarkup: an open move is one suggestion at each place, its open edit taken at the new one and refused at the
+  // old one; once the move is decided, the edit is a suggestion of its own where the sentence stands
+  const note = '; Numbers & dates: “4” → “14”<<}', cm = E.critic(M, () => null);
+  assert.ok(cm.includes('{++' + meeting(14) + '++}{>>moved here' + note) && cm.includes('{-- ' + meeting(4) + '--}{>>moved from here' + note), cm);
+  const kept = E.critic(M, h => h === mv ? 'acc' : null);
+  assert.ok(kept.includes('\n\nA public meeting is scheduled for March {~~4~>14~~}') && !kept.includes('railings. A public'), kept);
+});
+
+test('negations changed in two places of a sentence are two changes, each flagged', () => {
+  // Joining them (tried in 1.0.4, taken out again) kept a reader from deciding two independent negations apart, as in
+  // "may not keep pets and may not sublet", and made one change of two places in the sentence.
+  assert.deepEqual(read('The committee will approve the funding if the community supports it.', 'The committee will not approve the funding unless the community supports it.'), ['Added [polarity]', 'Reworded [polarity]']);
+  assert.deepEqual(read('The tenant may keep pets and may sublet the flat.', 'The tenant may not keep pets and may not sublet the flat.'), ['Added [polarity]', 'Added [polarity]']);
+});
+
+test('a negation that now negates another word is flagged', () => {
+  // the same words in another order: harmless when a clause moved with its "not", not when the "not" changed words
+  const M = E.compare('The tenant may not sublet, and the landlord must repair the roof.\n', 'The tenant may sublet, and the landlord must not repair the roof.\n', {});
+  assert.deepEqual(labels(M), ['Word order [polarity]']);
+  assert.equal(M.hunks[M.order[0]].finfo[0][1], 'Negation moved: “not sublet” → “not repair”');
+  assert.deepEqual(read('You cannot leave, and we can stay.', 'You can leave, and we cannot stay.'), ['Word order [polarity]']);
+  assert.deepEqual(read('On Monday, the board did not approve the budget.', 'The board did not approve the budget on Monday.'), ['Word order', 'Capitalization']);
+});
+
+test('a hidden character inside a word is a change of that character, not of the word', () => {
+  const ZWSP = String.fromCharCode(0x200b), SHY = String.fromCharCode(0xad);
+  // "today" with a zero-width space in it was read as the date word removed: a false "Numbers & dates" flag
+  const M = E.compare('Meet today at noon.\n', 'Meet to' + ZWSP + 'day at noon.\n', {});
+  assert.deepEqual(labels(M), ['Hidden character added [lookalike]']);
+  assert.equal(acceptAll(M), 'Meet to' + ZWSP + 'day at noon.\n'); assert.equal(rejectAll(M), 'Meet today at noon.\n');
+  assert.deepEqual(read('The infor' + SHY + 'mation is here.', 'The information is here.'), ['Hidden character removed [lookalike]']);
+  // a look-alike address and a hidden character are two changes, each flagged for what it is
+  assert.deepEqual(read('Send it to paypal.com today.', 'Send it to pаypal.com to' + ZWSP + 'day.'), ['Reworded [lookalike, link]', 'Hidden character added [lookalike]']);
+  // a word that really changed keeps its flags, and the hidden character in it is flagged too
+  assert.deepEqual(read('Meet today.', 'Meet to' + ZWSP + 'morrow.'), ['Reworded [number, lookalike]']);
+});
+
+test('a change\'s context starts with "…" only when its paragraph goes on further back', () => {
+  const M = E.compare(EX_A, EX_B, {}), ctx = sub => E.contextBefore(M, M.hunks.find(h => E.textOf(M.B, h.b, 0) === sub), 4);
+  assert.equal(ctx('Marta'), 'Dr.');
+  assert.equal(ctx('15'), '…repairs would cost roughly');
+});
+
+test('inline: the space in front of a move, or of a respelled word, stays outside its mark', () => {
   const M = E.compare(EX_A, EX_B, {}), html = E.renderUnified(M, {});
-  for (const h of M.hunks.filter(h => h.kind === 'move')) {
-    const firsts = [...html.matchAll(new RegExp('<span class="h [^"]*\\bfl\\b[^"]*\\bh0\\b[^"]*" data-h="' + h.id + '"><span class="mvtag (d|i)"', 'g'))].map(m => m[1]);
-    assert.deepEqual(firsts.sort(), ['d', 'i'], label(h));
-  }
   // the space in front of a move stays outside its mark, so the dot and the tag don't sit against the sentence before
   assert.match(html, /paint the railings\. <span class="h [^"]*\bmv\b[^"]*\bh0\b/);
   // and a respelled word keeps the space before it outside its mark too
@@ -597,4 +660,53 @@ test('two complete edits with a word between them stay two changes', () => {
   // a reworded phrase is still one change, and so is a number given in words and in figures
   assert.deepEqual(read('We need to make it work today.', 'We need to take it away today.'), ['Reworded']);
   assert.deepEqual(read('It runs for a period of twelve (12) months.', 'It runs for a period of twenty-four (24) months.'), ['Reworded [number]']);
+});
+
+/* ---------- found by reviewing 1.0.4 before its release ---------- */
+test('an edit made to text that moved down starts at its new place, where it is drawn', () => {
+  const a = 'Alpha paragraph stays first and is long enough.\n\nThe meeting is on March 4 in the town hall.\n\nBravo paragraph stays in the middle of it all.\n\nCharlie paragraph stays at the end of the text.\n';
+  const b = 'Alpha paragraph stays first and is long enough.\n\nBravo paragraph stays in the middle of it all.\n\nCharlie paragraph stays at the end of the text.\n\nThe meeting is on March 14 in the town hall.\n';
+  const M = E.compare(a, b, {}), ed = M.hunks[M.order[1]];
+  assert.deepEqual(labels(M), ['Paragraph moved & edited', 'Reworded [number]']);
+  assert.equal(M.entries[ed.first].mv, 'dst');
+  assert.equal(E.contextBefore(M, ed, 4), '…meeting is on March');
+});
+
+test('a hidden character in a word is flagged whatever else changed in it', () => {
+  const ZWSP = String.fromCharCode(0x200b);
+  assert.deepEqual(read('We meet Today.', 'We meet to' + ZWSP + 'day.'), ['Capitalization [lookalike]']);
+});
+
+test('the word a negation applies to is looked for in its own sentence', () => {
+  const M = E.compare('He said we will not, and they will. Then all stop.\n', 'He said we will, and they will not. Then all stop.\n', {});
+  assert.equal(M.hunks[M.order[0]].finfo[0][1], 'Negation moved: “not and” → “not”');
+});
+
+test('inline, moved text is drawn right whether its move is accepted or rejected, on random edits', () => {
+  const rnd = random(5150);
+  let moves = 0;
+  for (let run = 0; run < 1500; run++) {
+    const { a, b, opt } = randomPair(rnd), M = E.compare(a, b, Object.assign(opt, { moves: true }));
+    if (!M.hunks.some(h => h.kind === 'move' && h.first >= 0)) continue;
+    moves++;
+    for (const d of ['acc', 'rej']) {
+      const html = E.renderUnified(M, { markup: true, dec: h => h.kind === 'move' ? d : undefined, cls: h => h.kind === 'move' ? ' ' + d : '' });
+      checkMarks(M, marks(html), 'run ' + run + ', moves ' + d, 2);
+    }
+  }
+  assert.ok(moves > 25, 'the random edits should produce moves to check (got ' + moves + ')');
+});
+
+test('taking every CriticMarkup suggestion gives the revised text, refusing them the original, on random edits', () => {
+  // (Not checked: the indentation at the start of a line, which the export can lose in a suggestion that opens the text.)
+  const take = (s, yes) => s.replace(/\{>>[\s\S]*?<<\}/g, '').replace(/\{\+\+([\s\S]*?)\+\+\}/g, (m, x) => yes ? x : '').replace(/\{--([\s\S]*?)--\}/g, (m, x) => yes ? '' : x).replace(/\{~~([\s\S]*?)~>([\s\S]*?)~~\}/g, (m, x, y) => yes ? y : x);
+  const unindent = s => s.replace(/^[ \t]+/gm, ''), flat = s => s.replace(/\s+/g, ' ').trim();
+  const rnd = random(8086);
+  for (let run = 0; run < 1500; run++) {
+    const { a, b, opt } = randomPair(rnd), M = E.compare(a, b, opt);
+    if (M.critic) continue; // the drafts already hold CriticMarkup symbols
+    const cm = E.critic(M, null), where = 'run ' + run + '\n' + cm;
+    assert.equal(unindent(take(cm, true)), unindent(b), where);
+    assert.equal(flat(take(cm, false)), flat(a), where);
+  }
 });

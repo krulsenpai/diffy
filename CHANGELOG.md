@@ -2,6 +2,18 @@
 
 Diffy cannot check for updates, so this page is where you find out what changed. Press `?` inside Diffy to see which version you have.
 
+## 1.0.4
+
+Fixes found by looking closely at the built-in example. There is nothing new to learn.
+
+- **A move and the edits made on the way are decided apart.** A sentence that moved and was also edited used to be one change, so you could not keep the new order and refuse a new date. Now the move is one change and each edit inside it is a change of its own, with its own flag. Reject the move and the sentence goes back to its old place, its edits still there to accept or reject.
+- **The "moved" tags say which way.** They read "moved to ↑" where the text was and "moved from ↓" where it is now. An arrow alone was read as the way the text went. Both tags are now blue in every view, the colour of moved text.
+- **A "not" that moved is flagged.** "may not sublet … must repair" turned into "may sublet … must not repair" keeps every word, so it was shown as a harmless change of word order. Now it is flagged: the "not" applies to another word.
+- **A hidden character inside a word** is shown as exactly that. Before, the word was split in two, which could raise a false flag: "today" with an invisible character in it read as a date removed.
+- **The card's buttons.** "Go to the other end" is now a button like Accept and Reject, with its key (G), and no longer runs past the card's edge. G also works on the move whose card is open, as A and R do.
+- **The privacy notes scroll** on a short screen, such as a phone: their last lines were cut off.
+- **Smaller things.** A change's context starts with "…" only where text was cut. "Every shown change is reviewed" goes away when you undo a decision. Help no longer says the list of changes is "on the right", which it isn't on a narrow screen.
+
 ## 1.0.3
 
 Diffy was tried on real documents: fifteen pairs of licence versions, forty Word files and two editions of a book. This version fixes what they showed. There is nothing new to learn.
