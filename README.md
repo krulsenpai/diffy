@@ -27,7 +27,7 @@ Diffy never receives your text in the first place. All the work happens on your 
 ## What it does
 
 - **Reads like an editor.** It compares sentence by sentence, so a paragraph that was split, merged or re-wrapped doesn't turn the whole page red. Changes are marked word by word, and a fixed typo letter by letter. Add a clause to a numbered contract and you see one new clause and one renumbering, not a page of changed numbers.
-- **Flags what changes the meaning.** *will* → *will not*. *5 mg* → *50 mg*. *may* → *must*. *some* → *all*. *and* → *or*. A name, a date, a link that now points somewhere else. Two names, or two figures, that quietly changed places.
+- **Flags what changes the meaning.** *will* → *will not*. *5 mg* → *50 mg*. *may* → *must*. *some* → *all*. *and* → *or*. A name, a date, a link that now points somewhere else. A box that got ticked. Two names, or two figures, that quietly changed places.
 - **Sees what you can't.** *liable* → *viable*. A letter from another alphabet hiding in a word. Invisible characters, and ones that flip the direction of the text.
 - **Keeps the noise out of the way.** Spelling, punctuation, quotes, spacing and formatting each get a category you can hide. "Meaning only" leaves just the edits that matter.
 - **Follows moves.** A paragraph that moved, even one edited on the way, shows up as a move, not as something deleted here and something new over there.
@@ -67,7 +67,7 @@ Diffy cannot check for updates, because it cannot reach the internet. Press `?` 
 ## Good to know
 
 - **PDFs and other formats.** Diffy opens Word `.docx` files, plain text, Markdown and saved web pages. For a PDF, an old `.doc` file or anything else, copy the text and paste it in.
-- **Word files.** Diffy compares the words, not the look: fonts, bold and table layout are ignored. Tracked changes are read as if they had all been accepted.
+- **Word files.** Diffy compares the words, not the look: fonts, bold and table layout are ignored. A table is read row by row, and headers and footers are read too. Struck-through words and the address behind a link are shown, so a link that quietly points somewhere new is flagged. Tracked changes are read as if they had all been accepted.
 - **Languages.** Diffy compares text in any language, and flags changed figures, links and look-alike characters in all of them. The flags for words like *not*, *must* and *all*, and the spelling checks, only know English.
 - **A flag is a hint, not a verdict.** The yellow dots point at the edits most likely to matter, but an edit without a dot can still matter. For anything important, read every change. Out of the box Diffy tucks away pure spacing and quote-style changes; **All** brings them back.
 - **Your browser.** Diffy needs a reasonably recent browser. If yours has not been updated in a couple of years, update it first.
@@ -121,7 +121,7 @@ Code never had this problem, because `git diff` runs on your own machine. Prose 
 
 ### More about files and exports
 
-- Plain text is read in most encodings. From `.docx` files, footnotes and endnotes come along too.
+- Plain text is read in most encodings. From `.docx` files, footnotes, endnotes, headers and footers come along too.
 - Markdown and HTML markup is understood: a formatting change gets its own category, and a link that now points elsewhere is flagged.
 - CriticMarkup export: your decisions are applied and the changes you left open become suggestions.
 

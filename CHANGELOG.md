@@ -2,6 +2,20 @@
 
 Diffy cannot check for updates, so this page is where you find out what changed. Press `?` inside Diffy to see which version you have.
 
+## 1.0.5
+
+Diffy was tried on two Word files full of planted traps. This version fixes what they showed. Word files are now read more fully, so the same two files can show changes that were invisible before.
+
+- **Tables in Word files.** A table is now read row by row. Before, every cell was a paragraph of its own, and a row that moved could turn into false number changes on the row next to it.
+- **More of a Word file is read.** Headers and footers. Words that are struck through, shown as `~~struck~~`. The address behind a link, shown as `[words](address)`, so a link that keeps its words but points somewhere new is flagged. Tick boxes. Equations. Page numbers in a header or footer are left out, because they change by themselves.
+- **Names after a label.** "Landlord: John Smith" turned into "Landlord: Jane Doe" was not flagged. Neither was a short sentence made mostly of names. Both are now.
+- **Dates after a dash or a colon.** "August–October" turned into "August–November" was not flagged, and neither was a month that opens a sentence. Short day names such as *Mon* and *Fri* are now read as dates when a figure or another date stands beside them.
+- **Marks that carry meaning.** A box ticked or cleared (☐ → ☒), a tick turned into a cross, *≤* turned into *≥* and a grade going from *B−* to *B+* are now flagged. Before, they were filed as punctuation.
+- **Hidden characters.** Invisible "tag" characters, which can spell out words nobody sees, are now flagged like other hidden characters. A hidden character inside a number no longer reads as a changed number.
+- **Unrelated text is not "rewritten".** A paragraph taken out and a different one put in its place used to be one "rewritten" change, with flags such as "1923 → 6". Now it is a removal and an addition.
+- **A line of figures.** When several figures in one line change, as in the row of a table or in "Version 1, February 1989", each is a change of its own.
+- **Smaller things.** *10 000* written with a thin space is the same number as *10000*. Two hidden edits a word apart are two changes. An old `.doc` file, or a file locked with a password, gets a message that says what it is.
+
 ## 1.0.4
 
 Fixes found by looking closely at the built-in example. There is nothing new to learn.

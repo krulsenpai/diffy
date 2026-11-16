@@ -1,9 +1,9 @@
-// Engine tests. Run them with:  node --test tests/
+// Tests of the engine and of the file reader. Run them with:  node --test tests/
 // No dependencies and no browser. After editing the script in diffy.html, run node rehash.mjs first.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { html, script, cspHash, scriptHash, Engine as E, EX_A, EX_B, random } from './diffy.mjs';
+import { html, script, cspHash, scriptHash, Engine as E, EX_A, EX_B, random, readFile, zip } from './diffy.mjs';
 
 const file = name => readFileSync(new URL('../' + name, import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 
@@ -709,4 +709,183 @@ test('taking every CriticMarkup suggestion gives the revised text, refusing them
     assert.equal(unindent(take(cm, true)), unindent(b), where);
     assert.equal(flat(take(cm, false)), flat(a), where);
   }
+});
+
+/* ---------- found with two Word files full of planted traps ---------- */
+const flagsOf = (a, b) => { const M = E.compare(a + '\n', b + '\n', {}); return M.order.flatMap(id => M.hunks[id].finfo.map(f => f[0] + ': ' + f[1])); };
+const chr = (...codes) => String.fromCodePoint(...codes);
+
+test('a name after a label, or in a sentence made mostly of names, is flagged', () => {
+  // the capitals of a heading in Title Case say nothing; those of what a label introduces are the writer's own
+  assert.deepEqual(flagsOf('Landlord: John Smith', 'Landlord: Jane Doe'), ['name: “John”, “Smith” → “Jane”, “Doe”']);
+  assert.deepEqual(flagsOf('Landlord: John Michael Smith', 'Landlord: John Michael Doe'), ['name: “Smith” → “Doe”']);
+  assert.deepEqual(flagsOf('Landlord: Smith', 'Landlord: Jones'), ['name: “Smith” → “Jones”']);
+  assert.deepEqual(flagsOf('Witness — John Smith', 'Witness — Jane Doe'), ['name: “John”, “Smith” → “Jane”, “Doe”']);
+  assert.deepEqual(flagsOf('Two people signed: John Smith and Mary Jones.', 'Two people signed: Jane Doe and Mary Jones.'), ['name: “John”, “Smith” → “Jane”, “Doe”']);
+  // a line with a verb in small letters is a sentence, however many names it holds
+  assert.deepEqual(flagsOf('Mary Jones met John Smith.', 'Mary Jones met Jane Doe.'), ['name: “John”, “Smith” → “Jane”, “Doe”']);
+  assert.deepEqual(flagsOf('The Landlord is John Smith.', 'The Landlord is Jane Doe.'), ['name: “John”, “Smith” → “Jane”, “Doe”']);
+  assert.deepEqual(flagsOf('Signed for the Society by Priya Raman.', 'Signed for the Society by Tomasz Wierzbicki.'), ['name: “Priya”, “Raman” → “Tomasz”, “Wierzbicki”']);
+  // still no name: one capitalized word after a label, a sentence after one, the words of a heading
+  assert.deepEqual(read('Note: Smith must sign.', 'Note: Jones must sign.'), ['Reworded']);
+  assert.deepEqual(read('Note: Customers may cancel at any time.', 'Note: Clients may cancel at any time.'), ['Reworded']);
+  assert.deepEqual(read('Disclaimer of Warranty and Liability Terms\n\nThe body stays as it was.', 'Disclaimer of Warranty and Indemnity Terms\n\nThe body stays as it was.'), ['Reworded']);
+  // the label keeps its own names when a sentence follows it
+  assert.deepEqual(flagsOf('The Work or the Software: the work as it is distributed.', 'The Work or the Program: the work as it is distributed.'), ['name: “Software” → “Program”']);
+});
+
+test('a month or a day is a date after a dash or a colon, and as the first word of a sentence', () => {
+  assert.deepEqual(read('Mean humidity by chamber, August–October.', 'Mean humidity by chamber, August–November.'), ['Reworded [number]']);
+  assert.deepEqual(flagsOf('Readings for August-October.', 'Readings for August-November.'), ['number: “August-October” → “August-November”']);
+  assert.deepEqual(read('The month chosen: October.', 'The month chosen: November.'), ['Reworded [number]']);
+  assert.deepEqual(read('October is the deadline.', 'November is the deadline.'), ['Reworded [number]']);
+  assert.deepEqual(read('Readings for April–May.', 'Readings for April–March.'), ['Reworded [number]']);
+  // the short forms of the days, with a figure or another date beside them
+  assert.deepEqual(flagsOf('Open Mon–Fri.', 'Open Mon–Sat.'), ['number: “Fri” → “Sat”']);
+  assert.deepEqual(flagsOf('The meeting is on Mon 3 May.', 'The meeting is on Tue 3 May.'), ['number: “Mon” → “Tue”']);
+  assert.deepEqual(read('The meeting is on Mon 3 May.', 'The meeting is on Monday 3 May.'), ['Abbreviation']);
+  // "May", "March" and the short forms are other words too
+  assert.deepEqual(read('March on, said the captain.', 'Walk on, said the captain.'), ['Reworded']);
+  assert.deepEqual(read('The sun rose early.', 'The moon rose early.'), ['Reworded']);
+  assert.deepEqual(flagsOf('It was made by Sun Microsystems of California.', 'It was made by Oracle of California.'), ['name: “Sun”, “Microsystems” → “Oracle”']);
+});
+
+test('a box ticked, a comparison turned round and the sign of a grade are flagged', () => {
+  assert.deepEqual(flagsOf('☐ The tenant may keep pets.', '☒ The tenant may keep pets.'), ['polarity: “☐” → “☒”']);
+  assert.deepEqual(flagsOf('☐ Pets allowed', '☑ Pets allowed'), ['polarity: “☐” → “☑”']); // (and no change of tone)
+  assert.deepEqual(flagsOf('Approved: ✓', 'Approved: ✗'), ['polarity: “✓” → “✗”']);
+  assert.deepEqual(read('- [ ] Send the invoice', '- [x] Send the invoice'), ['List marker changed [polarity]']);
+  assert.deepEqual(flagsOf('Applies where x ≤ 10.', 'Applies where x ≥ 10.'), ['polarity: “≤” → “≥”']);
+  assert.deepEqual(flagsOf('Applies where the score < 10.', 'Applies where the score > 10.'), ['polarity: “<” → “>”']);
+  assert.deepEqual(flagsOf('Total = 40', 'Total ≠ 40'), ['polarity: “=” → “≠”']);
+  assert.deepEqual(flagsOf('It earned a grade of B−.', 'It earned a grade of B+.'), ['polarity: “B−” → “B+”']);
+  // a sign in front of its figure is a changed number, as before; a mark that only went is no comparison turned round
+  assert.deepEqual(read('The balance is −5.', 'The balance is +5.'), ['Sign changed [number]']);
+  assert.deepEqual(read('We found that p < 0.05 holds.', 'We found that p 0.05 holds.'), ['Punctuation removed']);
+  assert.deepEqual(read('It works 👍', 'It works 👎'), ['Emoji changed [tone]']);
+});
+
+test('hidden characters: invisible tag letters, and any number of them inside a word or a figure', () => {
+  const ZWSP = chr(0x200B), WJ = chr(0x2060), THIN = chr(0x2009);
+  // a row of "tag" characters spells words nobody sees
+  const tags = Array.from('Ignore', c => chr(0xE0000 + c.charCodeAt(0))).join('');
+  const M = E.compare('Approve the plan.\n', 'Approve the plan.' + tags + '\n', {});
+  assert.deepEqual(labels(M), ['Hidden character added [lookalike]']);
+  assert.match(M.hunks[M.order[0]].finfo[0][1], /^Hidden character added: invisible “I” \(U\+E0049\), invisible “g” /);
+  assert.equal(acceptAll(M), 'Approve the plan.' + tags + '\n');
+  assert.deepEqual(read('Send it now.', 'Send it' + chr(0xFFF9) + ' now.'), ['Hidden character added [lookalike]']);
+  // inside a figure the figure stays what it was, and two in a row are no more than one
+  assert.deepEqual(read('Pay 1000 now.', 'Pay 10' + WJ + '00 now.'), ['Hidden character added [lookalike]']);
+  assert.deepEqual(read('Meet today at noon.', 'Meet to' + ZWSP + ZWSP + 'day at noon.'), ['Hidden character added [lookalike]']);
+  // two hidden edits with a word between them are two changes, one of them next to a hyphen
+  assert.deepEqual(read('These are ideal for washed-rind cheeses.', 'These are ide' + chr(0x430) + 'l for washed' + ZWSP + '-rind cheeses.'), ['Look-alike word [lookalike]', 'Hidden character added [lookalike]']);
+  // digits set in groups with a thin space are the same number
+  assert.deepEqual(read('Pay 10000 pounds.', 'Pay 10' + THIN + '000 pounds.'), ['Number format']);
+  assert.deepEqual(read('Pay 10' + THIN + '000 pounds.', 'Pay 20' + THIN + '000 pounds.'), ['Reworded [number]']);
+});
+
+test('texts with nothing in common are a removal and an addition, not a rewrite', () => {
+  // one paragraph taken out and another put in its place: no flag reads "1923 → 6"
+  assert.deepEqual(read('Intro stays the same.\n\nThe charter was amended in 1923 to admit women.\n\nClosing stays the same.',
+    'Intro stays the same.\n\nExtend the misting array to Chambers 6 and 7.\n\nClosing stays the same.'), ['Paragraph removed', 'Paragraph added']);
+  assert.deepEqual(read('[2] The original charter is kept in a frame the cats are not permitted to sit on.', '[2] Letter from Hygrotek Ltd to the committee, 9 November 2026.'), ['Paragraph removed', 'Paragraph added']);
+  // a line brought up to date is still that line, each of its figures a change of its own
+  assert.deepEqual(flagsOf('Licence text\n\nVersion 1, February 1989\n\nThe body stays as it was.', 'Licence text\n\nVersion 2, June 1991\n\nThe body stays as it was.'), ['number: “1” → “2”', 'number: “1989”, “February” → “1991”, “June”']);
+  // and a few words put for a few others are one change, whatever they say
+  assert.deepEqual(read('15 May 2018', '07 March 2019'), ['Reworded [number]']);
+});
+
+test('the row of a table is one line, and each of its cells a change of its own', () => {
+  const rows = list => list.map(cells => cells.join(' | ')).join('\n\n');
+  const head = ['Variety', 'Chamber', 'Wheels', 'Age', 'Grade'], old = ['Old Chandler', '2', '118', '78', 'A+'], tomme = ['Schoolteacher\'s Tomme', '3', '154', '18', 'A'];
+  const M = E.compare(
+    rows([head, old, ['Washed Rind No. 4', '4', '96', '10', 'B'], tomme, ['Limestone Brie', '5', '87', '6', 'B−'], ['Net', '12,694.50', '9,558.00', '−24.7%']]) + '\n',
+    rows([head, old, tomme, ['Washed Rind No. 4', '4', '96', '12', 'B+'], ['Net', '12,730.50', '9,824.00', '−22.8%']]) + '\n', {});
+  // a row that moved and a row that went: the figures of the one are not read into the other
+  assert.deepEqual(labels(M), ['Paragraph moved & edited', 'Paragraph removed', 'Reworded [number]', 'Punctuation added [polarity]', 'Reworded [number]', 'Reworded [number]', 'Reworded [number]']);
+  assert.deepEqual(M.order.flatMap(id => M.hunks[id].finfo.map(f => f[1])), ['“10” → “12”', 'Added “B+”', '“12,694.50” → “12,730.50”', '“9,558.00” → “9,824.00”', '“−24.7%” → “−22.8%”']);
+  // the first word of a cell is like the first word of a line: no name for its capital
+  assert.deepEqual(read('Electricity | 3,900.00 | Old meter', 'Electricity | 3,900.00 | Misting array'), ['Reworded']);
+  assert.deepEqual(flagsOf('Cheddar | Old Chandler | 118', 'Cheddar | Old Miller | 118'), ['name: “Chandler” → “Miller”']);
+  // cells set apart by tabs: a figure is never read together with the one in the next cell
+  assert.deepEqual(flagsOf('Widget\t10\t4.50', 'Widget\t12\t4.50'), ['number: “10” → “12”']);
+});
+
+/* ---------- the Word reader ---------- */
+const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"';
+const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/';
+const rels = list => '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + list.map(([id, type, target, outside]) => '<Relationship Id="' + id + '" Type="' + REL + type + '" Target="' + target + '"' + (outside ? ' TargetMode="External"' : '') + '/>').join('') + '</Relationships>';
+const part = (tag, inner) => '<w:' + tag + ' ' + NS + '>' + inner + '</w:' + tag + '>';
+const p = (...runs) => '<w:p>' + runs.join('') + '</w:p>';
+const r = (text, props) => '<w:r>' + (props ? '<w:rPr>' + props + '</w:rPr>' : '') + '<w:t xml:space="preserve">' + text + '</w:t></w:r>';
+const fld = kind => '<w:r><w:fldChar w:fldCharType="' + kind + '"/></w:r>', instr = text => '<w:r><w:instrText xml:space="preserve">' + text + '</w:instrText></w:r>';
+const field = (code, result) => fld('begin') + instr(code) + fld('separate') + r(result) + fld('end');
+const table = list => '<w:tbl>' + list.map(cells => '<w:tr>' + cells.map(c => '<w:tc>' + c + '</w:tc>').join('') + '</w:tr>').join('') + '</w:tbl>';
+// the text Diffy reads from a Word file with this body (more: its other parts; links: what its main part points to)
+const word = (body, more, links) => readFile('test.docx', zip(Object.assign({
+  '_rels/.rels': rels([['rId1', 'officeDocument', 'word/document.xml']]), 'word/document.xml': part('document', '<w:body>' + body + '</w:body>'),
+  'word/_rels/document.xml.rels': rels(links || []) }, more)));
+
+test('Word: a table is read row by row', async () => {
+  assert.equal(await word(p(r('Before.')) + table([
+    [p(r('Variety')), p(r('Wheels')), p(r('Notes'))],
+    [p(r('Old Chandler')), p(r('118')), p()],                                                         // an empty cell at the end leaves nothing
+    [p(r('Two')) + p(r('paragraphs')), table([[p(r('inner a')), p(r('inner b'))]]), p(r('one'), '<w:r><w:br/></w:r>', r('two'))],
+    [p(), p(), p()]]) + p(r('After.'))),
+  'Before.\n\nVariety | Wheels | Notes\n\nOld Chandler | 118\n\nTwo paragraphs | inner a inner b | one two\n\nAfter.\n');
+});
+
+test('Word: struck-through words and the address of a link are written the Markdown way', async () => {
+  // runs struck one after another are one struck passage; text that is hidden is left out
+  assert.equal(await word(p(r('Kept. '), r('Figures are ', '<w:strike/>'), r('provisional', '<w:strike/>'), r(' until audited. ', '<w:dstrike/>'), r('Not struck', '<w:strike w:val="false"/>'), r(' and '), r('hidden', '<w:vanish/>'), r('shown.'))),
+    'Kept. ~~Figures are provisional until audited.~~ Not struck and shown.\n');
+  // a link whose words are its address says it already, and a link to a place in the same file has none
+  assert.equal(await word(
+    p(r('See the '), '<w:hyperlink r:id="rId7">' + r('Society website') + '</w:hyperlink>', r(' or '), '<w:hyperlink r:id="rId8">' + r('https://example.org/a') + '</w:hyperlink>', r(' or '), '<w:hyperlink w:anchor="top">' + r('the top') + '</w:hyperlink>', r('.')) +
+    p(field(' HYPERLINK "https://example.org/a page" \\o "tip" ', 'these words'), r(' and '), field(' HYPERLINK \\l "bookmark" ', 'those'), r('.')),
+    null, [['rId7', 'hyperlink', 'https://example.org/accounts/2026', true], ['rId8', 'hyperlink', 'https://example.org/a', true]]),
+  'See the [Society website](https://example.org/accounts/2026) or https://example.org/a or the top.\n\n[these words](<https://example.org/a page>) and those.\n');
+  // so a link that keeps its words and points somewhere else is a flagged change
+  const link = to => word(p(r('See the '), '<w:hyperlink r:id="rId7">' + r('Society website') + '</w:hyperlink>', r('.')), null, [['rId7', 'hyperlink', to, true]]);
+  assert.deepEqual(labels(E.compare(await link('https://example.org/2026'), await link('https://example.org/2026-revised'), {})), ['Link changed [link]']);
+});
+
+test('Word: headers first, footers last, notes numbered, page numbers left out', async () => {
+  const text = await word(p(r('Body text.'), '<w:r><w:footnoteReference w:id="2"/></w:r>'), {
+    'word/header1.xml': part('hdr', p(r('Society · DRAFT'))), 'word/header2.xml': part('hdr', p(r('Society · DRAFT'))), 'word/header3.xml': part('hdr', p()),
+    'word/footer1.xml': part('ftr', p(r('Page '), field(' PAGE  \\* MERGEFORMAT ', '3'), r(' of '), '<w:fldSimple w:instr=" NUMPAGES "><w:r><w:t>12</w:t></w:r></w:fldSimple>')),
+    'word/footer2.xml': part('ftr', p(r('Zebra Ltd'))),
+    'word/footnotes.xml': part('footnotes', '<w:footnote w:type="separator" w:id="0">' + p(r('—')) + '</w:footnote><w:footnote w:id="2">' + p(r(' A note with a '), '<w:hyperlink r:id="rId1">' + r('link') + '</w:hyperlink>', r('.')) + '</w:footnote>'),
+    'word/_rels/footnotes.xml.rels': rels([['rId1', 'hyperlink', 'https://example.org/note', true]]),
+  }, [['rId1', 'header', 'header1.xml'], ['rId2', 'header', 'header2.xml'], ['rId3', 'header', 'header3.xml'], ['rId4', 'footer', 'footer2.xml'], ['rId5', 'footer', 'footer1.xml'], ['rId6', 'footnotes', 'footnotes.xml'], ['rId7', 'constructor', 'x.xml']]);
+  // the same header on every kind of page is read once; "Page 3 of 12" would change with the length of the file
+  assert.equal(text, 'Society · DRAFT\n\nBody text.[1]\n\n[1] A note with a [link](https://example.org/note).\n\nPage # of #\n\nZebra Ltd\n');
+});
+
+test('Word: tick boxes, equations and fields', async () => {
+  const sym = (font, code) => '<w:r><w:sym w:font="' + font + '" w:char="' + code + '"/></w:r>';
+  const box = on => '<w:r><w:fldChar w:fldCharType="begin"><w:ffData><w:checkBox><w:default w:val="0"/>' + (on ? '<w:checked/>' : '') + '</w:checkBox></w:ffData></w:fldChar></w:r>' + instr(' FORMCHECKBOX ') + fld('end');
+  // the boxes of the symbol fonts, and those of a form: a box ticked in one draft is a flagged change
+  const boxes = (one, two) => word(p(sym('Wingdings', one), r(' Pets are allowed.')) + p(sym('Wingdings', two), r(' Subletting is allowed.')));
+  assert.equal(await boxes('F0A8', 'F0FE'), '☐ Pets are allowed.\n\n☑ Subletting is allowed.\n');
+  assert.deepEqual(labels(E.compare(await boxes('F0A8', 'F0FE'), await boxes('F0FE', 'F0A8'), {})), ['Punctuation changed [polarity]', 'Punctuation changed [polarity]']);
+  assert.equal(await word(p(box(false), r(' I agree.')) + p(box(true), r(' I disagree.'))), '☐ I agree.\n\n☒ I disagree.\n');
+  // a glyph the reader has no character for stays in the text, written one way whichever way the file writes it
+  const odd = await word(p(r('d'), sym('Symbol', 'F0B7'), r('e'), sym('Symbol', '00DA'), sym('Symbol', 'F0DA'), sym('Arial', '2713')));
+  assert.equal(odd, 'd•e' + chr(0xF0DA) + chr(0xF0DA) + '✓\n');
+  assert.equal(await word(p(r('Area is '), '<m:oMath><m:r><m:t>πr</m:t></m:r><m:sSup><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup></m:oMath>', r(' square units.'))), 'Area is πrx2 square units.\n');
+  // the result of a field inside another field's instruction is no text
+  assert.equal(await word(p(r('Total: '), fld('begin'), instr(' IF '), field(' PAGE ', '2'), instr(' = 1 "one" "many" '), fld('separate'), r('many'), fld('end'), r(' pages.'))), 'Total: many pages.\n');
+  assert.equal(await word(p(r('left'), '<w:r><w:ptab w:relativeTo="margin" w:alignment="right" w:leader="none"/></w:r>', r('right'))), 'left\tright\n');
+});
+
+test('Word: the main part by another name, and files that are no .docx', async () => {
+  const body = part('document', '<w:body>' + p(r('The main part has another name.')) + '</w:body>');
+  assert.equal(await readFile('other.docx', zip({ '_rels/.rels': rels([['rId1', 'officeDocument', 'word/document2.xml']]), 'word/document2.xml': body })), 'The main part has another name.\n');
+  assert.equal(await readFile('plain.docx', zip({ 'word/document.xml': body })), 'The main part has another name.\n');
+  const old = Uint8Array.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1].concat(Array(600).fill(0)));
+  await assert.rejects(readFile('old.doc', old), /older Word file/);
+  await assert.rejects(readFile('locked.docx', old), /protected with a password/);
+  await assert.rejects(readFile('sheet.xls', old), /isn’t plain text or a Word document/);
+  await assert.rejects(readFile('broken.docx', zip({ 'word/document.xml': '<w:document ' + NS + '><w:body>' })), /looks damaged/);
 });

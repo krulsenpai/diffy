@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Diffy 1.0.4: a private, offline, prose-aware diff tool. One file, no dependencies.
+  Diffy 1.0.5: a private, offline, prose-aware diff tool. One file, no dependencies.
   Source and newer versions: https://github.com/krulsenpai/diffy
   (Diffy cannot check for updates itself: it cannot reach the internet, by design.)
 
@@ -19,7 +19,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ecGA/dna+gEQjwKCQSoJ3GYzjsP84EQXrgO0bFngVtI='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9Aob+UjDguzlAOObRmdb3/irbZBDcxJKysHB5kzOMGM='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
@@ -678,7 +678,7 @@ const bare = k => k.charCodeAt(0) === 126 && k.length > 1 ? k.slice(1) : k; // s
 
 /* ---------- categories ---------- */
 const CATS = {
-  polarity: { tier: 'meaning', label: 'Polarity', desc: 'Negations added or removed, and reversals like increase → decrease.' },
+  polarity: { tier: 'meaning', label: 'Polarity', desc: 'Negations added or removed, and reversals like increase → decrease. A box ticked or cleared, and a comparison turned round (≤ → ≥).' },
   number:   { tier: 'meaning', label: 'Numbers & dates', desc: 'Changed figures, amounts, units, currencies, signs, versions, months and days.' },
   modal:    { tier: 'meaning', label: 'Obligation', desc: 'may ↔ must, should ↔ will: shifts in obligation or certainty.' },
   scope:    { tier: 'meaning', label: 'Scope', desc: 'all, some, only, always, most: who or how much a claim covers.' },
@@ -824,9 +824,11 @@ function looseKey(t, kind) {
 }
 // characters that change what text means or how it displays while showing nothing (or looking like something else)
 const RE_BIDI = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/;
-const RE_INVIS = /[\u00AD\u034F\u115F\u1160\u17B4\u17B5\u180B-\u180E\u200B-\u200D\u2060-\u2064\u206A-\u206F\uFEFF\uFE00-\uFE0F\u0000-\u0008\u000B\u000E-\u001F\u007F-\u009F]/;
+const RE_INVIS = /[\u00AD\u034F\u115F\u1160\u17B4\u17B5\u180B-\u180E\u200B-\u200D\u2060-\u2064\u206A-\u206F\uFEFF\uFE00-\uFE0F\uFFF9-\uFFFB\u{1D173}-\u{1D17A}\u{E0000}-\u{E007F}\u0000-\u0008\u000B\u000E-\u001F\u007F-\u009F]/u;
 const INVIS_NAMES = { '\u00AD': 'soft hyphen', '\u200B': 'zero-width space', '\u200C': 'zero-width non-joiner', '\u200D': 'zero-width joiner', '\u2060': 'word joiner', '\uFEFF': 'zero-width no-break space', '\u200E': 'left-to-right mark', '\u200F': 'right-to-left mark', '\u061C': 'Arabic letter mark', '\u202A': 'left-to-right embedding', '\u202B': 'right-to-left embedding', '\u202C': 'pop directional formatting', '\u202D': 'left-to-right override', '\u202E': 'right-to-left override', '\u2066': 'left-to-right isolate', '\u2067': 'right-to-left isolate', '\u2068': 'first strong isolate', '\u2069': 'pop directional isolate', '\u0000': 'null character' };
-const cpName = c => INVIS_NAMES[c] || 'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+const cpCode = c => 'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+// (an invisible "tag" character stands for a plain one, and a row of them spells hidden words: its name says which)
+const cpName = c => { const n = c.codePointAt(0); return INVIS_NAMES[c] || (n > 0xE001F && n < 0xE007F ? 'invisible “' + String.fromCharCode(n - 0xE0000) + '”' : ''); };
 const SCRIPTS = [['Latin', /\p{Script=Latin}/u], ['Cyrillic', /\p{Script=Cyrillic}/u], ['Greek', /\p{Script=Greek}/u], ['Armenian', /\p{Script=Armenian}/u], ['Cherokee', /\p{Script=Cherokee}/u]];
 function scriptsOf(w) { const out = new Set(); for (const ch of w) for (const [n, re] of SCRIPTS) if (re.test(ch)) { out.add(n); break; } return out; }
 function stem(w) {
@@ -847,13 +849,13 @@ function lemma(w) { return IRR[w] || stem(w); }
 /* ---------- tokenizer ---------- */
 // Every alternative is linear: bounded quantifiers mean a run of "+" or "." can't make the email or URL pattern rescan the text.
 // groups: 1 URL, 2 email, 3 emoji (whole ZWJ / skin-tone / flag sequences), 4 number, 5 word, 6 whitespace, 7 anything else
-const RE_MAIN = new RegExp(String.raw`(https?:\/\/[^\s<>"“”‘’()\[\]{}]{0,2047}[^\s<>"“”‘’()\[\]{}.,;:!?'])|([\w][\w.+-]{0,63}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8})|(\p{RI}\p{RI}|[#*0-9]\uFE0F?⃣|\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*)*)|(\p{N}+(?:[.,:]\p{N}+)*\p{L}*)|([\p{L}\p{M}\p{N}]+(?:['’‘\-‐‑.·${INWORD}][\p{L}\p{M}\p{N}]+)*)|([^\S\uFEFF]+)|(\.{2,}|[\-‐-―]{2,}|[!?]{2,}|_{2,}|\*{2,}|={2,}|~{2,}|[\s\S])`, 'uy');
+const RE_MAIN = new RegExp(String.raw`(https?:\/\/[^\s<>"“”‘’()\[\]{}]{0,2047}[^\s<>"“”‘’()\[\]{}.,;:!?'])|([\w][\w.+-]{0,63}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8})|(\p{RI}\p{RI}|[#*0-9]\uFE0F?⃣|\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*)*)|(\p{N}+(?:(?:[${INWORD}]+[.,:]?[${INWORD}]*|[.,:][${INWORD}]*|[\u2009\u202F\u00A0](?=\p{N}{3}(?!\p{N})))\p{N}+)*\p{L}*)|([\p{L}\p{M}\p{N}]+(?:(?:[${INWORD}]+['’‘\-‐‑.·]?[${INWORD}]*|['’‘\-‐‑.·][${INWORD}]*)[\p{L}\p{M}\p{N}]+)*)|([^\S\uFEFF]+)|(\.{2,}|[\-‐-―]{2,}|[!?]{2,}|_{2,}|\*{2,}|={2,}|~{2,}|[\s\S])`, 'uy');
 const RE_NOSPACE = /[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Thai}\p{sc=Lao}\p{sc=Khmer}\p{sc=Myanmar}]/u;
 const SEG = (typeof Intl !== 'undefined' && Intl.Segmenter) ? new Intl.Segmenter(undefined, { granularity: 'word' }) : null;
 const splitNoSpace = t => SEG ? Array.from(SEG.segment(t), s => s.segment) : Array.from(t);
 const RE_EMOJI = /\p{Extended_Pictographic}|\p{RI}/u;
 // ©, ® and ™ are picture characters to Unicode. In a text they are signs like any other: no emoji, and nothing to do with tone.
-const RE_SIGN = /^[\u00A9\u00AE\u2122]\uFE0F?$/, isEmoji = s => RE_EMOJI.test(s) && !RE_SIGN.test(s);
+const RE_SIGN = /^[\u00A9\u00AE\u2122]\uFE0F?$/, isEmoji = s => RE_EMOJI.test(s) && !RE_SIGN.test(s) && !tickOf(s); // (nor is a tick or a ticked box: see yesNo)
 // a word written in CAPITALS: emphasis ("WITHOUT ANY WARRANTY"), or an acronym
 const shout = t => t.t.length > 1 && t.t === t.t.toUpperCase();
 
@@ -1138,17 +1140,47 @@ function splitSentences(toks, from, lineEnds) {
   if (start < n) out.push([start, n]);
   return out;
 }
-function markSentence(toks, s0, s1) {
+// the words a heading in Title Case leaves in small letters
+const SMALL = S('a an the and or nor but for of in on at to by with from as per via vs');
+// A colon, or a dash with a space before it, ends a label: "Landlord: John Smith", "Witness — John Smith". A dash set
+// tight between two words joins them ("August–October") and starts nothing new.
+const endsLabel = tk => tk.t === ':' || (tk.pre !== '' && /^[—–-]$/.test(tk.t));
+// Are the tokens from a to b set in Title Case: every word with a capital or one of the small words, and most of them
+// with a capital? "Mary Jones met John Smith." and "Signed for the Society by Priya Raman." are sentences. (A web
+// address is written in small letters wherever it stands.)
+function titleCase(toks, a, b, min) {
   let words = 0, caps = 0;
-  for (let i = s0; i < s1; i++) if (toks[i].kind === K_W) { words++; if (/^\p{Lu}/u.test(toks[i].t)) caps++; }
-  const title = words >= 3 && caps / words > 0.6;
-  let open = true;
+  for (let i = a; i < b; i++) {
+    const tk = toks[i]; if (tk.kind !== K_W) continue;
+    words++;
+    if (/^\p{Lu}/u.test(tk.t)) caps++; else if (!SMALL.has(tk.k) && !isLinkTok(tk)) return false;
+  }
+  return words >= min && caps / words > 0.6;
+}
+// Where every word has a capital, a capital says nothing: in a heading in Title Case ("Remote Network Interaction and
+// Use") the first word is no name because of the word after it (head), and the others are none for their capitals.
+// What a label introduces is read by itself, and there the capitals are the writer's own: "Landlord: John Smith"
+// names someone (val). The label is read with its whole sentence: "The Work or the Software: the work…" is no heading.
+// The cells of a table row, set apart by "|", are read one by one, each like a line of its own.
+function markSentence(toks, s0, s1) {
+  for (let c0 = s0, i = s0; i <= s1; i++) if (i === s1 || (toks[i].kind === K_P && toks[i].t === '|')) { markPart(toks, c0, i); c0 = i + 1; }
+}
+function markPart(toks, s0, s1) {
+  let open = true, part = 0, title = titleCase(toks, s0, s1, 3);
   for (let i = s0; i < s1; i++) {
     const tk = toks[i];
     if (tk.kind === K_M) continue;
-    if (tk.kind === K_P) { if (RE_OPEN.test(tk.t) || /^[:—–-]$/.test(tk.t)) open = true; continue; }
-    tk.init = open; if (open && title) tk.head = true;
-    tk.cap = !open && !title && tk.kind === K_W && /^\p{Lu}/u.test(tk.t) && !/^I(?:['’]|$)/.test(tk.t) && !/\p{N}/u.test(tk.t);
+    if (tk.kind === K_P) {
+      if (endsLabel(tk)) {
+        let e = i + 1; while (e < s1 && !(toks[e].kind === K_P && endsLabel(toks[e]))) e++;
+        part++; title = titleCase(toks, i + 1, e, 1); open = true;
+      } else if (RE_OPEN.test(tk.t)) open = true;
+      continue;
+    }
+    const up = tk.kind === K_W && /^\p{Lu}/u.test(tk.t) && !/^I(?:['’]|$)/.test(tk.t) && !/\p{N}/u.test(tk.t);
+    tk.init = open;
+    if (title) { if (part) tk.val = up; else if (open) tk.head = true; }
+    tk.cap = !open && !title && up;
     open = false;
   }
 }
@@ -1510,10 +1542,12 @@ function alignGap(A, B, i0, i1, j0, j1, ctx, out) {
 // received) or inflected shares few whole words with its other version, so it was read as removed and written anew:
 // a text converted from British to American spelling came out as "rewritten". Sentences the word-based pass left
 // unmatched are therefore compared once more by their letters, three at a time, which a respelling barely changes.
+// One digit is like another there: a line whose figures were brought up to date, such as the row of a table, is still
+// that line, and each of its figures a change of its own.
 function letterTriples(D, u) {
   if (u.tri) return u.tri;
   let s = ' ';
-  for (let t = u.t0; t < u.t1; t++) if (isWord(D.toks[t])) s += bare(D.toks[t].k) + ' ';
+  for (let t = u.t0; t < u.t1; t++) if (isWord(D.toks[t])) s += bare(D.toks[t].k).replace(/\p{Nd}/gu, '0') + ' ';
   const m = new Map();
   for (let i = 0; i + 3 <= s.length; i++) { const g = s.slice(i, i + 3); m.set(g, (m.get(g) || 0) + 1); }
   return u.tri = { m, n: Math.max(0, s.length - 2) };
@@ -1698,7 +1732,7 @@ const tokLen = t => isWord(t) ? Math.max(1, t.k.length) : 1;
 // (Words only, never figures: "10,000" → "100,000" is one doubled character away, and nothing like a spelling fix.)
 const pureWord = t => t.kind === K_W && !/\p{N}/u.test(t.t);
 const sameLemma = (a, b) => (!!IRR[a] && IRR[a] === IRR[b]) || (stem(a) === stem(b) && inflected(a, b));
-const monthForms = (a, b) => a !== b && MONTHS.has(a) && MONTHS.has(b) && a.slice(0, 3) === b.slice(0, 3); // Jan / January
+const dateForms = (a, b) => a !== b && ((MONTHS.has(a) && MONTHS.has(b) && a.slice(0, 3) === b.slice(0, 3)) || DAY_ABBR[a] === b || DAY_ABBR[b] === a); // Jan / January, Mon / Monday
 // one contraction for another form of the same words: "dont" → "doesn't"
 function contracted(a, b) {
   const x = expand([a]), y = expand([b]);
@@ -1722,7 +1756,7 @@ function cleanupRuns(runs, A, B) {
       for (const t of runs[q].a) if (pureWord(A.toks[t])) a.push(t); else if (A.toks[t].t !== '.') return false;
       for (const t of runs[q].b) if (pureWord(B.toks[t])) b.push(t); else if (B.toks[t].t !== '.') return false;
     }
-    return a.length > 0 && a.length === b.length && a.length <= 8 && a.every((x, i) => same(x, b[i]) || monthForms(bare(A.toks[x].k), bare(B.toks[b[i]].k)));
+    return a.length > 0 && a.length === b.length && a.length <= 8 && a.every((x, i) => same(x, b[i]) || dateForms(bare(A.toks[x].k), bare(B.toks[b[i]].k)));
   };
   // is the block of changes in runs q0…q1 figures, days, months or addresses on both sides, and no other word?
   const hard = t => t.kind === K_N || isLinkTok(t) || (t.kind === K_W && (isNumWordTok(t) || MONTHS.has(bare(t.k)) || DAYS.has(bare(t.k))));
@@ -1746,6 +1780,7 @@ function cleanupRuns(runs, A, B) {
       for (; q < runs.length && runs[q].op !== 0; q++) { ad += len(runs[q].a, A); ai += len(runs[q].b, B); }
       if (q === r + 1) continue;
       if (respeltBlock(q0, r - 1) || respeltBlock(r + 1, q - 1)) continue;
+      if (R.a.some(t => A.toks[t].t === '|')) continue; // (changes in two cells of a table row are two changes)
       // Nor is a word between two changes when one of them swaps a figure, a date or an address for another: "pay
       // 1,500 by 1 May" → "pay 15,000 by 1 June" is two changes, and each can be taken or left on its own.
       if (R.a.some(t => isWord(A.toks[t])) && (atomBlock(q0, r - 1) || atomBlock(r + 1, q - 1))) continue;
@@ -1821,6 +1856,7 @@ function expand(keys) {
 // English thousands commas and trailing decimal zeros. "3.500" vs "3500" or "1,5" vs "1.5" stay different (the
 // value depends on the reader's locale), and units stay attached: 500mg ≠ 500kg.
 function canonNum(k) {
+  k = k.replace(/(\d) (?=\d{3}(?!\d))/g, '$1'); // digits set in groups with a thin or no-break space: "10 000"
   const m = /^([\d.,:]+?)(st|nd|rd|th)?(\p{L}*)$/u.exec(k);
   if (!m) return k;
   let core = m[1];
@@ -1870,7 +1906,7 @@ function numAtom(D, i) {
   if (t.kind !== K_P) return !(t.kind === K_W && bare(t.k) === 'and');
   return CURRENCY.has(t.t) || t.t === '%' || (SIGNS.has(t.t) && !(isNumTok(D.toks[i - 1]) && t.pre === ''));
 }
-const joined = t => !!t && !t.first && t.pre.length <= 1 && t.pre !== '\n';
+const joined = t => !!t && !t.first && t.pre.length <= 1 && t.pre !== '\n' && t.pre !== '\t'; // (a tab sets columns apart)
 // is token i part of a numeric phrase: a figure, a number word, or a sign, currency, unit or "and" stuck to one?
 function partOfNum(D, i) {
   const T = D.toks, t = T[i]; if (!t) return false;
@@ -1936,13 +1972,35 @@ function numPhrases(D, idx) {
   }
   return out;
 }
+// Is the word k, written txt in token t, a month where it stands? "May", "March" and the short forms are other words
+// too ("May I…", "March on", "Jan Novak"): those are a month in mid-sentence or with a figure after them, and in
+// CAPITALS, which is emphasis ("YOU MAY NOT COPY…"), only with a figure beside them ("4 MAY 2024"). The other months
+// always are, also as the first word of a sentence or after a colon ("Due: October").
+const SURE_MONTH = S('january february april june july august september october november december');
+function isMonth(D, t, k, txt) {
+  if (!MONTHS.has(k) || !/^\p{Lu}/u.test(txt)) return false;
+  const nx = D.toks[t.i + 1];
+  return SURE_MONTH.has(k) || (shout(t) ? isNumTok(nx) || isNumTok(D.toks[t.i - 1]) : !t.init || isNumTok(nx));
+}
+// The short forms of the days are other words too ("the sun", "he sat", "Sun Microsystems"): such a word is a day with
+// a figure beside it or next to another day or month, also across one mark ("Mon 3 May", "Mon–Fri", "Sat. 5 June").
+const DAY_ABBR = dict({ mon: 'monday', tue: 'tuesday', tues: 'tuesday', wed: 'wednesday', thu: 'thursday', thur: 'thursday', thurs: 'thursday', fri: 'friday', sat: 'saturday', sun: 'sunday' });
+const isDateWord = w => DAYS.has(w) || MONTHS.has(w) || !!DAY_ABBR[w];
+function nearDate(D, t) {
+  for (const d of [1, -1]) {
+    let x = D.toks[t.i + d];
+    if (x && x.kind === K_P && x.u === t.u) x = D.toks[t.i + 2 * d];
+    if (x && x.u === t.u && (isNumTok(x) || (x.kind === K_W && wordOnly(x).some(isDateWord)))) return true;
+  }
+  return false;
+}
 // May is a month in "Due May 4" but a modal in "May I…"; Will is a name in "Will Smith"
 function wordRole(D, t) {
   if (!/^\p{Lu}/u.test(t.t)) return null;
-  const k = bare(t.k), nx = D.toks[t.i + 1], caps = shout(t);
-  // A word in CAPITALS is emphasis ("YOU MAY NOT COPY…"): a month only with a figure beside it ("4 MAY 2024"), never a name
-  if (MONTHS.has(k) && (caps ? isNumTok(nx) || isNumTok(D.toks[t.i - 1]) : !t.init || isNumTok(nx))) return 'date';
-  if (!caps && (MODAL.has(k) || SCOPE.has(k) || TONE.has(k)) && (t.cap || (nx && nx.kind === K_W && /^\p{Lu}/u.test(nx.t) && joined(nx)))) return 'name';
+  const k = bare(t.k), nx = D.toks[t.i + 1];
+  if (isMonth(D, t, k, t.t)) return 'date';
+  // (a word in CAPITALS is never a name for being one of these)
+  if (!shout(t) && (MODAL.has(k) || SCOPE.has(k) || TONE.has(k)) && (t.cap || (nx && nx.kind === K_W && /^\p{Lu}/u.test(nx.t) && joined(nx)))) return 'name';
   return null;
 }
 // other: the days and months named on the other side of the change. A word one slip away from one of those is that
@@ -1951,10 +2009,16 @@ function datesOf(D, idx, other) {
   const out = [];
   for (const i of idx) {
     const t = D.toks[i]; if (!t || t.kind !== K_W) continue;
-    let k = bare(t.k);
-    if (!MONTHS.has(k) && !DAYS.has(k)) { const w = other && dateWord(k); if (!w || !other.has(w)) continue; k = w; }
-    if (DAYS.has(k)) out.push({ key: 'd:' + k, text: t.t });
-    else if (/^\p{Lu}/u.test(t.t) && (shout(t) ? isNumTok(D.toks[t.i + 1]) || isNumTok(D.toks[t.i - 1]) : !t.init || isNumTok(D.toks[t.i + 1]))) out.push({ key: 'm:' + k.slice(0, 3), text: t.t });
+    // each part of a joined word is looked at: "August-October" names two months
+    const ks = wordOnly(t), parts = t.t.split('-');
+    ks.forEach((k, p) => {
+      const txt = parts.length === ks.length ? parts[p] : t.t;
+      if (!isDateWord(k)) { const w = other && dateWord(k); if (!w || !other.has(w)) return; k = w; }
+      const day = DAYS.has(k) ? k : DAY_ABBR[k] && /^\p{Lu}/u.test(txt) && (ks.some((w, q) => q !== p && isDateWord(w)) || nearDate(D, t)) ? DAY_ABBR[k] : '';
+      // (i: the token, which is then no name)
+      if (day) out.push({ key: 'd:' + day, text: t.t, i: t.i });
+      else if (isMonth(D, t, k, txt)) out.push({ key: 'm:' + k.slice(0, 3), text: t.t, i: t.i });
+    });
   }
   return out;
 }
@@ -2046,7 +2110,7 @@ function isName(D, t, loose) {
   if (shout(t) && CUR.lower.has(k)) return false;
   // A capital in mid-sentence makes a name, or a defined term ("the Buyer"). It makes none of a function word: licences
   // write "You" and "Your" that way, and a list may open with "If" or "The" after a colon.
-  return (t.cap && !FUNC.has(k)) || wordRole(D, t) === 'name' || (t.init && nameLike(k) && (loose || CUR.caps.has(k) || (!t.head && capNext(D, t))));
+  return (t.cap && !FUNC.has(k)) || wordRole(D, t) === 'name' || (nameLike(k) && (t.val || (t.init && (loose || CUR.caps.has(k) || (!t.head && capNext(D, t))))));
 }
 // The first word of a sentence is capitalized whatever it is. It only counts as a name with some support: the same
 // word capitalized in mid-sentence somewhere in the two texts, or a capitalized word right after it ("New York").
@@ -2059,7 +2123,7 @@ function hiddenNote(ta, tb) {
   const hidden = l => { const out = []; for (const t of l) for (const c of t.t) if (RE_INVIS.test(c) || RE_BIDI.test(c)) out.push(c); return out; };
   const ha = hidden(ta), hb = hidden(tb);
   if (msEq(ha, hb)) return null;
-  const d = msDiff(ha, hb), list = l => [...new Set(l)].map(c => cpName(c) + ' (U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0') + ')').join(', ');
+  const d = msDiff(ha, hb), list = l => [...new Set(l)].map(c => cpName(c) ? cpName(c) + ' (' + cpCode(c) + ')' : cpCode(c)).join(', ');
   const bidi = d.add.concat(d.rem).some(c => RE_BIDI.test(c));
   return (d.add.length ? 'Hidden character added: ' + list(d.add) : 'Hidden character removed: ' + list(d.rem)) + (bidi ? '. It changes the order text is displayed in.' : '. It is invisible on screen.');
 }
@@ -2069,6 +2133,22 @@ function linkTargets(toks) {
   for (const t of toks) {
     if (t.href) out.push(t.href);
     else if (t.kind === K_W && (/^https?:\/\//i.test(t.t) || /@/.test(t.t) || RE_DOMAIN.test(t.t))) out.push(t.t);
+  }
+  return out;
+}
+// Marks that answer yes or no, and signs that compare two things: a box ticked, or "≤" turned into "≥", changes what
+// the text says. A plus or minus set against a capital letter or two is the same kind of mark: a grade or a blood
+// group ("B−" → "B+").
+const TICKS = S('☐ ☑ ☒ ✓ ✔ ✗ ✘ ✅ ❌ ❎'), COMPARE = S('< > ≤ ≥ = ≠ ≈');
+const tickOf = s => { s = s.replace(/\uFE0F/g, ''); return TICKS.has(s) ? s : ''; };
+function yesNo(D, toks) {
+  const out = [];
+  for (const t of toks) {
+    if (t.kind === K_M) { if (t.k.startsWith('task:')) out.push(t.k === 'task: ' ? '[ ]' : '[x]'); continue; } // a Markdown task
+    if (t.kind !== K_P) continue;
+    const p = D.toks[t.i - 1], n = D.toks[t.i + 1];
+    if (tickOf(t.t)) out.push(tickOf(t.t));
+    else if (SIGNS.has(t.t) && t.pre === '' && p && p.kind === K_W && /^\p{Lu}{1,3}$/u.test(p.t) && !(n && n.pre === '' && (isWord(n) || SIGNS.has(n.t)))) out.push(p.t + t.t);
   }
   return out;
 }
@@ -2109,11 +2189,17 @@ function computeFlags(h, ia, ib, nearA, nearB) {
   // "and" put where "or" was, or the other way round: both, or either
   const ja = ea.filter(w => w === 'and' || w === 'or'), jb = eb.filter(w => w === 'and' || w === 'or');
   if (ja.length === jb.length && !msEq(ja, jb) && !F.some(f => f[0] === 'scope')) F.push(['scope', changeText(msDiff(ja, jb))]);
-  // (a day or month misspelt on one side is no name: "Wendesday" → "Wednesday")
-  const names = (D, ws, loose, dates) => ws.filter(t => isName(D, t, loose) && !(dates.size && dates.has(dateWord(bare(t.k))))).map(t => normTypo(t.t));
-  let ca = names(A, wa, false, dB), cb = names(B, wb, false, dA);
+  // a box ticked or cleared, a tick turned into a cross, the plus or minus of a grade, one comparison sign put for another
+  const ya = yesNo(A, ta), yb = yesNo(B, tb);
+  if (!msEq(ya, yb)) F.push(['polarity', changeText(msDiff(ya, yb))]);
+  const cmp = l => l.filter(t => t.kind === K_P && COMPARE.has(t.t)).map(t => t.t), dc = msDiff(cmp(ta), cmp(tb));
+  if (dc.rem.length && dc.add.length) F.push(['polarity', changeText(dc)]);
+  // (a word read as a day or a month is no name: "Mon–Fri", or "Wendesday" put right)
+  const names = (D, ws, loose, dated) => ws.filter(t => !dated.has(t.i) && isName(D, t, loose)).map(t => normTypo(t.t));
+  const inA = new Set(da.map(x => x.i)), inB = new Set(db.map(x => x.i));
+  let ca = names(A, wa, false, inA), cb = names(B, wb, false, inB);
   // a name on one side makes the first word of a sentence on the other side one too: "Maria signed." → "Marta signed."
-  if (ca.length && !cb.length) cb = names(B, wb, true, dA); else if (cb.length && !ca.length) ca = names(A, wa, true, dB);
+  if (ca.length && !cb.length) cb = names(B, wb, true, inB); else if (cb.length && !ca.length) ca = names(A, wa, true, inA);
   // the same name in another form ("License" → "Licenses", "Buyer" → "Buyer's") is no other name
   const dnm = msDiff(ca, cb);
   for (let x = dnm.rem.length - 1; x >= 0; x--) {
@@ -2239,7 +2325,7 @@ function classifyTok(h, ia, ib, nearA, nearB) {
   }
   if (ka.length === 1 && kb.length === 1 && !hard && ka[0].length <= 64 && kb[0].length <= 64) {
     const a = bare(ka[0]), b = bare(kb[0]);
-    if (monthForms(a, b)) { h.cat = 'style'; h.sub = 'Abbreviation'; return; }
+    if (dateForms(a, b)) { h.cat = 'style'; h.sub = 'Abbreviation'; return; }
     if (usify(a) === usify(b)) { h.cat = 'spelling'; h.sub = 'UK/US spelling'; return; }
     if (CONFUSABLE[a] && CONFUSABLE[a].includes(b)) { h.cat = 'spelling'; h.sub = 'Commonly confused'; return; }
     if ((IRR[a] && IRR[a] === IRR[b]) || (stem(a) === stem(b) && inflected(a, b))) { h.cat = 'grammar'; h.sub = ARTICLES.has(a) ? 'Article' : 'Word form'; return; }
@@ -2271,6 +2357,23 @@ function wholeUnits(D, idx) {
   return seen.size > 0;
 }
 
+// Do sentences removed and sentences added in the same place have something in common? They do when they share words
+// that carry weight: not the small words every text is made of, and not figures, which are what changes when a line
+// is brought up to date ("Version 2, June 1991" → "Version 3, 29 June 2007"). With nothing in common, one text was
+// taken out and another put in, and no flag should read "1923 → 6". A few words put for a few others (a date line, a
+// table cell) are one change whatever they say.
+const FUNC_STEMS = new Set(Array.from(FUNC, w => stem(w))), AKIN = 0.05;
+function akin(ua, ub, idf) {
+  const words = l => l.reduce((s, u) => s + u.nw, 0);
+  if (words(ua) <= 3 && words(ub) <= 3) return true;
+  const weigh = l => { const m = new Map(); for (const u of l) for (const [w, c] of u.bag) if (!FUNC_STEMS.has(w) && !/^\p{N}/u.test(w)) m.set(w, (m.get(w) || 0) + c * idf.get(w)); return m; };
+  const wa = weigh(ua), wb = weigh(ub);
+  let all = 0, both = 0;
+  for (const v of wa.values()) all += v;
+  for (const [w, v] of wb) { all += v; if (wa.has(w)) both += Math.min(v, wa.get(w)); }
+  return !all || 2 * both / all >= AKIN;
+}
+
 /* ---------- build: items → entries + hunks ---------- */
 function build(A, B, items, ctx) {
   const hunks = [], entries = [];
@@ -2297,19 +2400,21 @@ function build(A, B, items, ctx) {
       ls = p; ld = q;
     }
   }
-  // 2. whole-sentence changes: one hunk per run (per paragraph when one-sided); attach paragraph breaks
+  // 2. whole-sentence changes. Sentences removed and sentences added in one place are one rewritten passage when they
+  //    have something in common (akin); otherwise each side is a change of its own, one per paragraph. Paragraph
+  //    breaks are attached afterwards.
   for (let x = 0; x < n;) {
     if (items[x].k !== 'del' && items[x].k !== 'ins') { x++; continue; }
     let y = x; while (y < n && (items[y].k === 'del' || items[y].k === 'ins')) y++;
-    let hasD = false, hasI = false;
-    for (let z = x; z < y; z++) if (items[z].h == null && unitOf(items[z]).kind === 's') { if (items[z].k === 'del') hasD = true; else hasI = true; }
-    const mixed = hasD && hasI;
-    let plain = null;
+    const da = [], ib = [];
+    for (let z = x; z < y; z++) if (items[z].h == null && unitOf(items[z]).kind === 's') (items[z].k === 'del' ? da : ib).push(unitOf(items[z]));
+    const mixed = da.length > 0 && ib.length > 0 && akin(da, ib, ctx.idf);
+    let plain = null, side = '';
     for (let z = x; z < y; z++) {
       const it = items[z];
       if (unitOf(it).kind === 'p') { if (!mixed) plain = null; continue; }
       if (it.h != null) continue;
-      if (!plain) { plain = mk('unit', ''); plain.ua = []; plain.ub = []; }
+      if (!plain || (!mixed && it.k !== side)) { plain = mk('unit', ''); plain.ua = []; plain.ub = []; side = it.k; }
       it.h = plain.id; (it.k === 'del' ? plain.ua : plain.ub).push(it.k === 'del' ? it.a[0] : it.b[0]);
     }
     for (let z = x; z < y; z++) {
@@ -2805,8 +2910,8 @@ function critic(M, decision) {
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = s => String(s).replace(/[&<>"']/g, c => ESC[c]);
 const CTL_ABBR = { '\u202A': 'LRE', '\u202B': 'RLE', '\u202C': 'PDF', '\u202D': 'LRO', '\u202E': 'RLO', '\u2066': 'LRI', '\u2067': 'RLI', '\u2068': 'FSI', '\u2069': 'PDI', '\u200E': 'LRM', '\u200F': 'RLM', '\u061C': 'ALM', '\u200B': 'ZWSP', '\u200C': 'ZWNJ', '\u200D': 'ZWJ', '\u2060': 'WJ', '\u00AD': 'SHY', '\uFEFF': 'BOM', '\u0000': 'NUL' };
-const RE_BIDI_G = new RegExp(RE_BIDI.source, 'g'), RE_INVIS_G = new RegExp(RE_INVIS.source, 'g');
-const badge = c => '<span class="ctl" title="' + esc(cpName(c)) + '">' + (CTL_ABBR[c] || 'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')) + '</span>';
+const RE_BIDI_G = new RegExp(RE_BIDI.source, 'g'), RE_INVIS_G = new RegExp(RE_INVIS.source, 'gu');
+const badge = c => '<span class="ctl" title="' + esc(cpName(c) || cpCode(c)) + '">' + (CTL_ABBR[c] || cpCode(c)) + '</span>';
 // text for display: escaped, with direction controls always shown as a badge (so they can't reorder what you read),
 // and inside changes, invisible characters too
 function vis(s, changed) { let h = esc(s).replace(RE_BIDI_G, badge); if (changed) h = h.replace(RE_INVIS_G, badge); return h; }
@@ -3104,7 +3209,7 @@ return {
 // The version is also written in the comment at the top of the file (the tests keep the two in step).
 // Diffy is made to be downloaded once and then used for months from someone's own computer, so nothing in it is a
 // clickable link and nothing in it needs the internet: an address is always plain text to copy.
-const VERSION = '1.0.4', SOURCE = 'github.com/krulsenpai/diffy';
+const VERSION = '1.0.5', SOURCE = 'github.com/krulsenpai/diffy';
 const ONLINE = /^https?:$/.test(location.protocol); // opened from a website, not from a file on this computer
 const TITLE = document.title; // the page's own title, put back whenever no comparison is on screen
 const E = Engine, CATS = E.CATS, esc = E.esc, vis = E.vis;
@@ -3882,12 +3987,14 @@ async function readFile(file) {
   if (file.size > 40 * 1024 * 1024) throw new Error('That file is over 40 MB. Diffy is built for prose; try a smaller text.');
   const u8 = new Uint8Array(await file.arrayBuffer());
   if (u8[0] === 0x50 && u8[1] === 0x4B) {
-    let xml = null, notes = new Map();
-    try {
-      xml = await zipEntry(u8, 'word/document.xml');
-      for (const [f, p] of [['word/footnotes.xml', 'f'], ['word/endnotes.xml', 'e']]) { const x = await zipEntry(u8, f); if (x) noteTexts(new TextDecoder().decode(x), p, notes); }
-    } catch (e) { if (e && e.docx) throw e; }
-    if (xml) return { text: docxText(new TextDecoder().decode(xml), notes), enc: 'utf-8' };
+    let text = null;
+    try { text = await docxText(u8); } catch (e) { if (e && e.docx) throw e; }
+    if (text !== null) return { text, enc: 'utf-8' };
+  }
+  // an old .doc and a .docx locked with a password are the same kind of file, which a browser cannot open
+  if (u8[0] === 0xD0 && u8[1] === 0xCF && u8[2] === 0x11 && u8[3] === 0xE0 && /\.do[ct][xm]?$/i.test(file.name)) {
+    throw new Error(/[xm]$/i.test(file.name) ? '“' + file.name + '” is protected with a password. In Word, save a copy without the password and open that, or copy the text and paste it in.'
+      : '“' + file.name + '” is an older Word file. In Word, save it as .docx and open that, or copy the text and paste it in.');
   }
   let { text, enc } = decodeText(u8);
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
@@ -3918,51 +4025,121 @@ async function zipEntry(u8, name) {
   }
   return null;
 }
-// Paragraph text of a WordprocessingML part. Tracked changes read as accepted: deletions and the old place of a move are
-// skipped, hidden (vanished) text is skipped, and footnotes and endnotes are numbered and listed at the end.
+// The text of a Word file, as the file shows it when it is opened. Tracked changes read as accepted (deletions and the
+// old place of a move are skipped) and hidden text is left out. What plain text can't show is written the Markdown way:
+// ~~struck-through~~ words, and the address of a link whose words don't say it, as [words](address). A table is read
+// row by row, its cells set apart by " | ". Footnotes and endnotes are numbered and listed at the end; the headers of
+// the pages come first and their footers last, each once.
 const RE_W_NS = /^http:\/\/(?:schemas\.openxmlformats\.org\/wordprocessingml\/2006\/main|purl\.oclc\.org\/ooxml\/wordprocessingml\/main)$/;
 const wattr = (el, a) => el.getAttribute('w:' + a) || el.getAttributeNS(el.namespaceURI, a);
-const isVanished = r => { const pr = Array.from(r.children).find(x => x.localName === 'rPr'); const v = pr && Array.from(pr.children).find(x => x.localName === 'vanish'); return !!v && !/^(0|false|off)$/i.test(wattr(v, 'val') || ''); };
+const kid = (el, name) => Array.from(el.children).find(x => x.localName === name);
+const isOn = v => !!v && !/^(0|false|off)$/i.test(wattr(v, 'val') || '');
+const runHas = (r, name) => { const pr = kid(r, 'rPr'); return isOn(pr && kid(pr, name)); };
+// a and b put around the words of s, with the space at its two ends left outside
+const wrap = (s, a, b) => { const core = s.trim(), lead = s.length - s.trimStart().length; return core ? s.slice(0, lead) + a + core + b + s.slice(lead + core.length) : s; };
+// the words of a link with its address, unless the words are the address
+const noScheme = u => u.trim().replace(/^(?:https?:\/\/|mailto:)/i, '').replace(/\/$/, '');
+const linked = (s, url) => noScheme(s) === noScheme(url) ? s : wrap(s, '[', '](' + (/[\s()]/.test(url) ? '<' + url + '>' : url) + ')');
+// the boxes and ticks of Word's symbol fonts: the font's own code for each, and a character every font has
+const SYM = { Wingdings: { '6F': '☐', 70: '☐', 71: '☐', 72: '☐', A8: '☐', 78: '☒', FD: '☒', FE: '☑', FC: '✓', FB: '✗' }, 'Wingdings 2': { A3: '☐', 51: '☒', 53: '☒', 54: '☒', 52: '☑', 50: '✓', '4F': '✗' }, Symbol: { B7: '•' } };
+// (two marks no text holds stand for the start and the end of struck-through words until a paragraph is put together)
+const STRIKE = [String.fromCharCode(1), String.fromCharCode(2)], RE_STRIKE_GAP = new RegExp(STRIKE[1] + '(\\s*)' + STRIKE[0], 'g'), RE_STRIKE = new RegExp('[' + STRIKE.join('') + ']', 'g');
 function parseXml(xml) {
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
   if (doc.getElementsByTagName('parsererror').length) { const e = new Error('This Word file looks damaged, so Diffy can’t read it. Save it again in Word, or copy its text and paste it in.'); e.docx = true; throw e; }
   return doc;
 }
-function wordParas(root, refs, notes) {
-  const out = [];
+// links: where each link of this part leads, by its id. refs: the notes referred to so far (null where notes aren't numbered).
+function wordParas(root, refs, notes, links) {
+  const out = [], fields = []; // fields: the ones open where the walk stands, innermost last; i: its instruction, r: showing its result
+  let row = null, cell = false, hide = 0; // the cells of the table row being read, whether one of them is, and whether the text is hidden
+  // Text counts where it isn't hidden and every field around it shows its result. The instruction of a field is no
+  // text, and neither is a page number, which is written "#": "Page 3 of 12" in a footer would change with the length
+  // of the document.
+  const paged = f => /^\s*(?:PAGE|NUMPAGES|SECTIONPAGES)\b/i.test(f.i), shown = () => !hide && fields.every(f => f.r && !paged(f));
   const walk = (el, buf) => {
     for (const c of el.children) {
-      const n = c.localName;
+      const n = c.localName, put = s => { if (shown()) buf.push(s); };
       if (n === 'Fallback' || n === 'moveFrom' || n === 'del' || /Pr$/.test(n)) continue;
-      if (!RE_W_NS.test(c.namespaceURI || '')) { walk(c, buf); continue; }
-      if (n === 'p') { const b = [], i = out.push('') - 1; walk(c, b); out[i] = b.join(''); }
+      if (!RE_W_NS.test(c.namespaceURI || '')) { if (buf && n === 't' && /\/math$/.test(c.namespaceURI || '')) put(c.textContent); else walk(c, buf); continue; } // (the text of an equation)
+      if (n === 'p') {
+        const b = [], i = out.push('') - 1; walk(c, b); out[i] = b.join('').replace(RE_STRIKE_GAP, '$1').replace(RE_STRIKE, '~~');
+        // (an instruction ends with its paragraph at the latest: a field left open by a damaged file must not hide the rest of the text)
+        while (fields.length && !fields[fields.length - 1].r) fields.pop();
+      }
+      else if (n === 'tr' && !row) { row = []; walk(c, buf); out.push(row.join(' | ').replace(/[\s|]+$/, '')); row = null; } // (empty cells at the end of a row leave nothing)
+      else if (n === 'tc' && row && !cell) { cell = true; const from = out.length; walk(c, null); row.push(out.splice(from).filter(s => s.trim()).join(' ').replace(/\n/g, ' ')); cell = false; } // (a table inside a cell is part of the cell)
       else if (!buf) walk(c, buf);
-      else if (n === 'r' && isVanished(c)) continue;
-      else if (n === 't') buf.push(c.textContent);
-      else if (n === 'tab') buf.push('\t');
-      else if (n === 'br' || n === 'cr') buf.push('\n');
-      else if (n === 'noBreakHyphen') buf.push('-');
+      else if (n === 'r') {
+        // (a hidden run is still walked: a field may open or close in it)
+        const gone = runHas(c, 'vanish') ? 1 : 0, from = buf.length;
+        hide += gone; walk(c, buf); hide -= gone;
+        if (runHas(c, 'strike') || runHas(c, 'dstrike')) buf.push(wrap(buf.splice(from).join(''), STRIKE[0], STRIKE[1]));
+      }
+      else if (n === 't') put(c.textContent);
+      else if (n === 'tab' || n === 'ptab') put('\t');
+      else if (n === 'br' || n === 'cr') put('\n');
+      else if (n === 'noBreakHyphen') put('-');
+      else if (n === 'sym') {
+        // (a glyph the table doesn't know stays in the text as the font's own code, so that a change of it still shows)
+        const code = (wattr(c, 'char') || '').toUpperCase(), v = parseInt(code, 16) || 0xFFFD;
+        put((SYM[wattr(c, 'font')] || {})[code.slice(-2)] || String.fromCharCode(v < 256 ? 0xF000 | v : v));
+      }
+      else if (n === 'fldChar') {
+        const k = wattr(c, 'fldCharType'), f = fields[fields.length - 1], form = kid(c, 'ffData'), box = form && kid(form, 'checkBox');
+        if (k === 'begin') { if (box) put(isOn(kid(box, 'checked') || kid(box, 'default')) ? '☒' : '☐'); fields.push({ i: '', r: false }); } // (a form's tick box)
+        else if (f && k === 'separate') { f.r = true; f.buf = buf; f.at = buf.length; }
+        else if (f && k === 'end') {
+          fields.pop();
+          const m = /^\s*HYPERLINK\s+"([^"]+)"/i.exec(f.i);
+          if (paged(f)) put('#'); else if (m && f.buf === buf) buf.push(linked(buf.splice(f.at).join(''), m[1]));
+        }
+      }
+      else if (n === 'instrText') { if (fields.length) fields[fields.length - 1].i += c.textContent; }
+      else if (n === 'fldSimple') { const f = { i: wattr(c, 'instr') || '', r: true }; fields.push(f); walk(c, buf); fields.pop(); if (paged(f)) put('#'); }
+      else if (n === 'hyperlink') { const url = links && links.get(c.getAttribute('r:id')), from = buf.length; walk(c, buf); if (url) buf.push(linked(buf.splice(from).join(''), url)); }
       else if ((n === 'footnoteReference' || n === 'endnoteReference') && refs) {
         const key = n[0] + wattr(c, 'id');
-        if (notes.has(key)) { let k = refs.indexOf(key); if (k < 0) k = refs.push(key) - 1; buf.push('[' + (k + 1) + ']'); }
+        if (notes.has(key) && shown()) { let k = refs.indexOf(key); if (k < 0) k = refs.push(key) - 1; buf.push('[' + (k + 1) + ']'); }
       } else walk(c, buf);
     }
   };
   walk(root, null);
   return out;
 }
-function noteTexts(xml, p, notes) {
-  const doc = parseXml(xml);
-  for (const el of Array.from(doc.documentElement.children)) {
-    if (el.localName !== 'footnote' && el.localName !== 'endnote') continue;
-    if (/separator/i.test(wattr(el, 'type') || '')) continue;
-    notes.set(p + wattr(el, 'id'), wordParas(el, null, notes).filter(s => s.trim()).join(' ').trim()); // (Word opens a note with a space)
-  }
+// What a part of the file points to: where the notes, the headers and the footers are, and where each link leads.
+// ('' is the file itself, which points to its main part.)
+async function relsOf(u8, path) {
+  const i = path.lastIndexOf('/') + 1, x = await zipEntry(u8, path.slice(0, i) + '_rels/' + path.slice(i) + '.rels');
+  return !x ? [] : Array.from(parseXml(new TextDecoder().decode(x)).documentElement.children, r => {
+    const t = r.getAttribute('Target') || '', ext = r.getAttribute('TargetMode') === 'External';
+    return { id: r.getAttribute('Id'), type: (r.getAttribute('Type') || '').replace(/^.*\//, ''), ext, target: ext ? t : t[0] === '/' ? t.slice(1) : path.slice(0, i) + t };
+  });
 }
-function docxText(xml, notes) {
-  const refs = [], out = wordParas(parseXml(xml).documentElement, refs, notes).filter(s => s.trim());
+async function docxText(u8) {
+  const top = (await relsOf(u8, '')).find(r => r.type === 'officeDocument');
+  // one part of the file: its root, what it points to, and where its links lead
+  const open = async path => {
+    const x = await zipEntry(u8, path); if (!x) return null;
+    const rels = await relsOf(u8, path);
+    return { root: parseXml(new TextDecoder().decode(x)).documentElement, rels, links: new Map(rels.filter(r => r.ext && r.type === 'hyperlink').map(r => [r.id, r.target])) };
+  };
+  const paras = (pt, root, refs) => wordParas(root, refs, notes, pt.links).filter(s => s.trim());
+  const doc = await open(top ? top.target : 'word/document.xml'), notes = new Map(), refs = [], head = [], foot = [];
+  if (!doc || doc.root.localName !== 'document' || !RE_W_NS.test(doc.root.namespaceURI || '')) return null; // (a spreadsheet is such an archive too)
+  for (const r of doc.rels) if (!r.ext && (r.type === 'footnotes' || r.type === 'endnotes')) {
+    const pt = await open(r.target);
+    // each note under its id (Word opens a note with a space)
+    for (const el of pt ? Array.from(pt.root.children) : []) if ((el.localName === 'footnote' || el.localName === 'endnote') && !/separator/i.test(wattr(el, 'type') || '')) notes.set(el.localName[0] + wattr(el, 'id'), paras(pt, el, null).join(' ').trim());
+  }
+  const out = paras(doc, doc.root, refs);
   refs.forEach((k, i) => out.push('[' + (i + 1) + '] ' + notes.get(k)));
-  return out.join('\n\n') + '\n';
+  for (const r of doc.rels) if (!r.ext && (r.type === 'header' || r.type === 'footer')) {
+    const pt = await open(r.target), t = pt ? paras(pt, pt.root, null).join('\n\n') : '', l = r.type === 'header' ? head : foot;
+    if (t && !l.includes(t)) l.push(t);
+  }
+  // (the file lists its headers and footers in no order that means anything: by their text, they stand the same in two drafts)
+  return head.sort().concat(out, foot.sort()).join('\n\n') + '\n';
 }
 function htmlToText(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -4172,7 +4349,7 @@ function openHelp() {
     '<p class="lede">Paste or drop two drafts and press Compare. Go through the changes with J and K (or the list of changes) and <b>Accept</b> each one to use the revised wording or <b>Reject</b> it to keep the original. Then open <b>Final</b> to copy or download the text with your decisions applied. Changes you haven’t decided follow the “Undecided changes” choice there.</p>' +
     '<h3>Reading the marks</h3><div class="prose-sm"><span class="h"><del class="d">Struck red</del></span> was removed, <span class="h"><ins class="i">underlined green</ins></span> was added, blue is moved text with a “moved” tag at each end, and a yellow dot and underline flag a change that can alter the meaning. After a decision, an accepted change keeps a solid green underline and a rejected one a dashed red underline. ¶ marks a paragraph split or merge; · and ↵ mark spacing and line-break changes. Hidden characters show as small yellow badges such as <span class="ctl">ZWSP</span> or <span class="ctl">RLO</span>.</div>' +
     '<h3>Keyboard</h3><div class="keys">' + keys.map(([k, d]) => '<span>' + k.map(x => '<kbd>' + x + '</kbd>').join('') + '</span><span>' + d + '</span>').join('') + '</div>' +
-    '<h3>Files and exports</h3><div class="prose-sm">Drag a file over the window and it shows two halves, Original and Revised: drop the file on the one it belongs to. Or drop two files anywhere (the older becomes the original). Word files (<code>.docx</code>) open directly: tracked changes are read as accepted, hidden text is left out, and footnotes are numbered and listed at the end. The Export button above the text gives you the final text, a self-contained redline page and <code>CriticMarkup</code> with your decisions applied.</div>' +
+    '<h3>Files and exports</h3><div class="prose-sm">Drag a file over the window and it shows two halves, Original and Revised: drop the file on the one it belongs to. Or drop two files anywhere (the older becomes the original). Word files (<code>.docx</code>) open directly and are read the way they look when opened: tracked changes as accepted, hidden text left out. A table is read row by row, headers come first and footers last, and footnotes are numbered and listed at the end. Struck-through words and the address behind a link are written the Markdown way, as <code>~~struck~~</code> and <code>[words](address)</code>. The Export button above the text gives you the final text, a self-contained redline page and <code>CriticMarkup</code> with your decisions applied.</div>' +
     '<h3>What the categories mean</h3>' + cats('meaning') + cats('content') + cats('mech') +
     '<p class="note">Polarity, Obligation, Scope, Tone and Spelling go by English word lists. The comparison itself, and the flags for figures, links and look-alike characters, work in any language.</p>' +
     '<h3>About</h3><div class="prose-sm">Diffy ' + VERSION + ', free software under the GNU AGPL, version 3 only. The licence covers Diffy, not your documents: what you export is yours.<br><br>' +
