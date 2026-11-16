@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Diffy 1.0.5: a private, offline, prose-aware diff tool. One file, no dependencies.
+  Diffy 1.0.6: a private, offline, prose-aware diff tool. One file, no dependencies.
   Source and newer versions: https://github.com/krulsenpai/diffy
   (Diffy cannot check for updates itself: it cannot reach the internet, by design.)
 
@@ -19,7 +19,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9Aob+UjDguzlAOObRmdb3/irbZBDcxJKysHB5kzOMGM='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kqFd9xC3OTSoGA4oZJvq5CNV+cZsOXRjCZdDXnIbbg8='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
@@ -849,7 +849,8 @@ function lemma(w) { return IRR[w] || stem(w); }
 /* ---------- tokenizer ---------- */
 // Every alternative is linear: bounded quantifiers mean a run of "+" or "." can't make the email or URL pattern rescan the text.
 // groups: 1 URL, 2 email, 3 emoji (whole ZWJ / skin-tone / flag sequences), 4 number, 5 word, 6 whitespace, 7 anything else
-const RE_MAIN = new RegExp(String.raw`(https?:\/\/[^\s<>"“”‘’()\[\]{}]{0,2047}[^\s<>"“”‘’()\[\]{}.,;:!?'])|([\w][\w.+-]{0,63}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8})|(\p{RI}\p{RI}|[#*0-9]\uFE0F?⃣|\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*)*)|(\p{N}+(?:(?:[${INWORD}]+[.,:]?[${INWORD}]*|[.,:][${INWORD}]*|[\u2009\u202F\u00A0](?=\p{N}{3}(?!\p{N})))\p{N}+)*\p{L}*)|([\p{L}\p{M}\p{N}]+(?:(?:[${INWORD}]+['’‘\-‐‑.·]?[${INWORD}]*|['’‘\-‐‑.·][${INWORD}]*)[\p{L}\p{M}\p{N}]+)*)|([^\S\uFEFF]+)|(\.{2,}|[\-‐-―]{2,}|[!?]{2,}|_{2,}|\*{2,}|={2,}|~{2,}|[\s\S])`, 'uy');
+// (a degree sign with its C or F is a word, the unit of the figure before it: "4 °C" → "4 °F" is a changed amount)
+const RE_MAIN = new RegExp(String.raw`(https?:\/\/[^\s<>"“”‘’()\[\]{}]{0,2047}[^\s<>"“”‘’()\[\]{}.,;:!?'])|([\w][\w.+-]{0,63}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8})|(\p{RI}\p{RI}|[#*0-9]\uFE0F?⃣|\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*)*)|(\p{N}+(?:(?:[${INWORD}]+[.,:]?[${INWORD}]*|[.,:][${INWORD}]*|[\u2009\u202F\u00A0](?=\p{N}{3}(?!\p{N})))\p{N}+)*\p{L}*)|(°[CF](?![\p{L}\p{M}\p{N}])|[\p{L}\p{M}\p{N}]+(?:(?:[${INWORD}]+['’‘\-‐‑.·]?[${INWORD}]*|['’‘\-‐‑.·][${INWORD}]*)[\p{L}\p{M}\p{N}]+)*)|([^\S\uFEFF]+)|(\.{2,}|[\-‐-―]{2,}|[!?]{2,}|_{2,}|\*{2,}|={2,}|~{2,}|[\s\S])`, 'uy');
 const RE_NOSPACE = /[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Thai}\p{sc=Lao}\p{sc=Khmer}\p{sc=Myanmar}]/u;
 const SEG = (typeof Intl !== 'undefined' && Intl.Segmenter) ? new Intl.Segmenter(undefined, { granularity: 'word' }) : null;
 const splitNoSpace = t => SEG ? Array.from(SEG.segment(t), s => s.segment) : Array.from(t);
@@ -1162,6 +1163,8 @@ function titleCase(toks, a, b, min) {
 // What a label introduces is read by itself, and there the capitals are the writer's own: "Landlord: John Smith"
 // names someone (val). The label is read with its whole sentence: "The Work or the Software: the work…" is no heading.
 // The cells of a table row, set apart by "|", are read one by one, each like a line of its own.
+// a word its writer gave a capital: "I" has one wherever it stands, so its capital says nothing
+const capWord = t => t.kind === K_W && /^\p{Lu}/u.test(t.t) && !/^I(?:['’]|$)/.test(t.t);
 function markSentence(toks, s0, s1) {
   for (let c0 = s0, i = s0; i <= s1; i++) if (i === s1 || (toks[i].kind === K_P && toks[i].t === '|')) { markPart(toks, c0, i); c0 = i + 1; }
 }
@@ -1177,7 +1180,7 @@ function markPart(toks, s0, s1) {
       } else if (RE_OPEN.test(tk.t)) open = true;
       continue;
     }
-    const up = tk.kind === K_W && /^\p{Lu}/u.test(tk.t) && !/^I(?:['’]|$)/.test(tk.t) && !/\p{N}/u.test(tk.t);
+    const up = capWord(tk) && !/\p{N}/u.test(tk.t);
     tk.init = open;
     if (title) { if (part) tk.val = up; else if (open) tk.head = true; }
     tk.cap = !open && !title && up;
@@ -1534,7 +1537,30 @@ function alignGap(A, B, i0, i1, j0, j1, ctx, out) {
     else if (c === 5) { rev.push({ k: 'pair', a: [i0 + i - 1], b: [j0 + j - 2, j0 + j - 1] }); i--; j -= 2; }
     else { for (; j > 0; j--) rev.push({ k: 'ins', b: [j0 + j - 1] }); for (; i > 0; i--) rev.push({ k: 'del', a: [i0 + i - 1] }); }
   }
-  for (const it of pairByLetters(A, B, rev.reverse(), ctx)) out.push(it);
+  for (const it of loosenBreaks(A, B, pairByLetters(A, B, rev.reverse(), ctx), ctx)) out.push(it);
+}
+// A paragraph break lines up with another one only beside text that does: next to a sentence found on both sides, or
+// to a passage rewritten where it stood (akin). Between stretches of text that have nothing to do with each other,
+// the breaks were paired off by position alone: paragraphs taken out and paragraphs put in then came one by one in
+// turn, and the heading of a section could be cut off from its text. There, each break goes with its own side, and
+// what was removed and what was added stay changes of their own (loose).
+function loosenBreaks(A, B, list, ctx) {
+  const lined = x => x < 0 || x >= list.length || list[x].k === 'pair'; // (what lies around the stretch is lined up)
+  // the removed and the added sentences next to x, up to the next break or sentence that lines up
+  const beside = (x, d, ua, ub) => {
+    for (x += d; x >= 0 && x < list.length && (list[x].k === 'del' || list[x].k === 'ins'); x += d) {
+      const del = list[x].k === 'del', u = del ? A.units[list[x].a[0]] : B.units[list[x].b[0]];
+      if (u.kind === 's') (del ? ua : ub).push(u);
+    }
+  };
+  return list.flatMap((it, x) => {
+    if (it.k !== 'pb' || lined(x - 1) || lined(x + 1)) return [it];
+    const pa = [], pb = [], na = [], nb = [];
+    beside(x, -1, pa, pb); beside(x, 1, na, nb);
+    // (with nothing removed, or nothing added, around it, the break has no change of its side to go with)
+    if (!(pa.length + na.length && pb.length + nb.length) || (pa.length && pb.length && akin(pa, pb, ctx.idf)) || (na.length && nb.length && akin(na, nb, ctx.idf))) return [it];
+    return [{ k: 'del', a: it.a, loose: true }, { k: 'ins', b: it.b, loose: true }];
+  });
 }
 
 /* ---------- a second look, by letters ---------- */
@@ -1601,6 +1627,39 @@ function pairByLetters(A, B, list, ctx) {
   return out;
 }
 
+// Where the same sentences stand in another order, a longest common run of them has to leave some out, and which ones
+// is chance: of two list items that changed places, either can come out as "the one that moved". So the matches that
+// a left-out sentence jumped over are given up again, and the stretch between them is lined up by weight (alignGap):
+// the heavier text stays where it is, the lighter is what moved, and a sentence edited on the spot is compared with
+// its other version instead of travelling along. (Only where the stretch is small enough to weigh.)
+// xs, ys: what stands at each place (the same number for the same sentence; below 2 for what never moves);
+// m: the places matched, in pairs; posA, posB: the unit at a place; a0…b1: the units the places lie in.
+const SETTLE_CELLS = 1e5;
+function settle(xs, ys, m, posA, posB, a0, a1, b0, b1) {
+  const K = m.length >> 1, inX = new Uint8Array(xs.length), inY = new Uint8Array(ys.length), free = new Map();
+  for (let q = 0; q < m.length; q += 2) { inX[m[q]] = 1; inY[m[q + 1]] = 1; }
+  for (let y = 0; y < ys.length; y++) if (!inY[y] && ys[y] > 1) { const l = free.get(ys[y]); if (l) l.push(y); else free.set(ys[y], [y]); }
+  if (!K || !free.size) return m;
+  const drop = new Uint8Array(K);
+  const from = (col, v) => { let lo = 0, hi = K; while (lo < hi) { const md = (lo + hi) >> 1; if (m[2 * md + col] < v) lo = md + 1; else hi = md; } return lo; }; // the first match at or after v
+  for (let x = 0; x < xs.length; x++) {
+    const l = !inX[x] && xs[x] > 1 && free.get(xs[x]); if (!l || !l.length) continue;
+    // the matches between its two places: after it in one draft, before it in the other
+    const p = from(0, x), q = from(1, l.shift());
+    drop.fill(1, Math.min(p, q), Math.max(p, q));
+  }
+  const out = [];
+  for (let k = 0; k < K;) {
+    if (!drop[k]) { out.push(m[2 * k], m[2 * k + 1]); k++; continue; }
+    let e = k; while (e < K && drop[e]) e++;
+    // the stretch this opens: from the match before the first one given up to the match after the last
+    const na = (e < K ? posA(m[2 * e]) : a1) - (k ? posA(m[2 * k - 2]) + 1 : a0), nb = (e < K ? posB(m[2 * e + 1]) : b1) - (k ? posB(m[2 * k - 1]) + 1 : b0);
+    if (na * nb > SETTLE_CELLS) for (let z = k; z < e; z++) out.push(m[2 * z], m[2 * z + 1]);
+    k = e;
+  }
+  return out;
+}
+
 function alignUnits(A, B, ctx) {
   const UA = A.units, UB = B.units, cA = new Map(), cB = new Map();
   for (const u of UA) if (u.kind === 's') cA.set(u.key, (cA.get(u.key) || 0) + 1);
@@ -1617,7 +1676,8 @@ function alignUnits(A, B, ctx) {
   // only units that can match are diffed (the others never would): thousands of unmatched ones made this pass slow
   const pa = [], pb = [];
   ia.forEach((v, i) => { if (v > 0) pa.push(i); }); ib.forEach((v, j) => { if (v > 0) pb.push(j); });
-  const mc = lcsOrEdges(Int32Array.from(pa, i => ia[i]), Int32Array.from(pb, j => ib[j]), null), items = [];
+  const xa = Int32Array.from(pa, i => ia[i]), xb = Int32Array.from(pb, j => ib[j]), items = [];
+  const mc = settle(xa, xb, lcsOrEdges(xa, xb, null), x => pa[x], y => pb[y], 0, UA.length, 0, UB.length);
   let pi = 0, pj = 0;
   for (let q = 0; q < mc.length; q += 2) {
     const i = pa[mc[q]], j = pb[mc[q + 1]];
@@ -1636,7 +1696,7 @@ function alignRun(A, B, i0, i1, j0, j1, ctx, out) {
     const ga = new Int32Array(i1 - i0), gb = new Int32Array(j1 - j0);
     for (let x = 0; x < ga.length; x++) ga[x] = id(UA[i0 + x]);
     for (let y = 0; y < gb.length; y++) gb[y] = id(UB[j0 + y]);
-    const all = lcsOrEdges(ga, gb, ctx), m = [];
+    const all = settle(ga, gb, lcsOrEdges(ga, gb, ctx), x => i0 + x, y => j0 + y, i0, i1, j0, j1), m = [];
     // A paragraph break only anchors the alignment right next to a sentence that is identical on both sides. Where a
     // whole stretch has changed, breaks matched one by one paired its paragraphs by position: with one paragraph added
     // at the top, every paragraph after it was compared with the wrong one, or reported as moved.
@@ -1692,11 +1752,24 @@ function detectMoves(items, A, B, ctx) {
     }
   }
   cands.sort((p, q) => q[0] - p[0]);
-  const used = new Set();
-  for (const [, x, y] of cands) {
-    if (used.has(x) || used.has(y)) continue;
-    used.add(x); used.add(y);
-    items[x].mv = true; items[y].mv = true; items[x].mate = y; items[y].mate = x;
+  const link = (x, y) => { items[x].mv = true; items[y].mv = true; items[x].mate = y; items[y].mate = x; };
+  for (const [, x, y] of cands) if (!items[x].mv && !items[y].mv) link(x, y);
+  // A sentence that stands next to moved text at both of its places went along with it, however short it is: the
+  // heading of a section that moved, also when it was renamed on the way ("Notice" → "Notice period"). (Alone, a word
+  // or two found again somewhere else are no move.)
+  const unitAt = z => items[z].k === 'del' ? A.units[items[z].a[0]] : B.units[items[z].b[0]];
+  // the sentence beside item z in its own draft, across the paragraph breaks that went or came with it
+  const beside = (z, d) => {
+    for (const k = items[z].k; (z += d) >= 0 && z < items.length && items[z].k === k;) if (unitAt(z).kind === 's') return items[z].mv ? -1 : z;
+    return -1;
+  };
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const x of dels) if (items[x].mv) for (const d of [-1, 1]) {
+      const p = beside(x, d), q = beside(items[x].mate, d); if (p < 0 || q < 0) continue;
+      const ua = unitAt(p), ub = unitAt(q);
+      if (ua.key === ub.key || (ua.nw && ub.nw && (ua.wk === ub.wk || 2 * bagOverlap(ua.bag, ub.bag, idf) >= ctx.MT * (ua.w + ub.w)))) { link(p, q); grew = true; }
+    }
   }
 }
 
@@ -1768,6 +1841,7 @@ function cleanupRuns(runs, A, B) {
     }
     return a > 0 && b > 0;
   };
+  const bar = (q0, q1) => { for (let q = q0; q <= q1; q++) if (runs[q].a.some(t => A.toks[t].t === '|') || runs[q].b.some(t => B.toks[t].t === '|')) return true; return false; };
   for (let changed = true, guard = 0; changed && guard < 64; guard++) {
     changed = false;
     for (let r = 1; r < runs.length - 1; r++) {
@@ -1780,7 +1854,9 @@ function cleanupRuns(runs, A, B) {
       for (; q < runs.length && runs[q].op !== 0; q++) { ad += len(runs[q].a, A); ai += len(runs[q].b, B); }
       if (q === r + 1) continue;
       if (respeltBlock(q0, r - 1) || respeltBlock(r + 1, q - 1)) continue;
-      if (R.a.some(t => A.toks[t].t === '|')) continue; // (changes in two cells of a table row are two changes)
+      // (changes in two cells of a table row are two changes: the mark between two cells may be among the words
+      // between them, or in one of the changes when a cell was added or removed)
+      if (bar(r, r) || bar(q0, r - 1) || bar(r + 1, q - 1)) continue;
       // Nor is a word between two changes when one of them swaps a figure, a date or an address for another: "pay
       // 1,500 by 1 May" → "pay 15,000 by 1 June" is two changes, and each can be taken or left on its own.
       if (R.a.some(t => isWord(A.toks[t])) && (atomBlock(q0, r - 1) || atomBlock(r + 1, q - 1))) continue;
@@ -1997,10 +2073,10 @@ function nearDate(D, t) {
 // May is a month in "Due May 4" but a modal in "May I…"; Will is a name in "Will Smith"
 function wordRole(D, t) {
   if (!/^\p{Lu}/u.test(t.t)) return null;
-  const k = bare(t.k), nx = D.toks[t.i + 1];
+  const k = bare(t.k);
   if (isMonth(D, t, k, t.t)) return 'date';
   // (a word in CAPITALS is never a name for being one of these)
-  if (!shout(t) && (MODAL.has(k) || SCOPE.has(k) || TONE.has(k)) && (t.cap || (nx && nx.kind === K_W && /^\p{Lu}/u.test(nx.t) && joined(nx)))) return 'name';
+  if (!shout(t) && (MODAL.has(k) || SCOPE.has(k) || TONE.has(k)) && (t.cap || capNext(D, t))) return 'name';
   return null;
 }
 // other: the days and months named on the other side of the change. A word one slip away from one of those is that
@@ -2116,7 +2192,8 @@ function isName(D, t, loose) {
 // word capitalized in mid-sentence somewhere in the two texts, or a capitalized word right after it ("New York").
 // Without that, every ordinary first word that changed ("Customers" → "Clients") was flagged as a name.
 // (In a heading set in Title Case every word is followed by a capital, so there the next word is no support: t.head.)
-function capNext(D, t) { const nx = D.toks[t.i + 1]; return !!nx && nx.kind === K_W && /^\p{Lu}/u.test(nx.t) && joined(nx); }
+// ("I" is no such word: "Should I sign?" opens with no name)
+function capNext(D, t) { const nx = D.toks[t.i + 1]; return !!nx && capWord(nx) && joined(nx); }
 const isInvis = t => t.kind === K_P && (RE_INVIS.test(t.t) || RE_BIDI.test(t.t));
 // What a change did to hidden characters (on their own, or inside a word), or null when it left them as they were.
 function hiddenNote(ta, tb) {
@@ -2249,8 +2326,10 @@ function classifyMod(h, a, b) {
 const FMT_SUB = [[/^h\d|^setext/, 'Heading'], [/^(?:ul|ol:|task:)/, 'List marker'], [/^strong/, 'Bold'], [/^em$/, 'Italics'], [/^del$/, 'Strikethrough'], [/^mark$/, 'Highlight'], [/^code/, 'Code formatting'], [/^!?\[|^\]|^def:|^fn:/, 'Link'], [/^comment:/, 'Comment'], [/^fence:/, 'Code block'], [/^hr$/, 'Divider'], [/^>$/, 'Quote marker'], [/^</, 'HTML tag'], [/^\\$/, 'Escape']];
 function formatSub(ta, tb) {
   const ma = ta.filter(t => t.kind === K_M).map(t => t.k), mb = tb.filter(t => t.kind === K_M).map(t => t.k);
-  const d = msDiff(ma, mb), k = (d.add[0] || d.rem[0] || '');
-  const name = (FMT_SUB.find(([re]) => re.test(k)) || [null, 'Formatting'])[1];
+  const d = msDiff(ma, mb), nameOf = k => (FMT_SUB.find(([re]) => re.test(k)) || [null, 'Formatting'])[1];
+  const name = nameOf(d.add[0] || d.rem[0] || ''), was = nameOf(d.rem[0] || '');
+  // one kind of formatting put for another: "**bold**" → "*italics*"
+  if (d.add.length && d.rem.length && was !== name && was !== 'Formatting' && name !== 'Formatting') return was + ' → ' + name.toLowerCase();
   if (name === 'List marker' && d.add.some(x => x.startsWith('ol:')) && d.rem.some(x => x.startsWith('ol:'))) return 'List numbering';
   if (name === 'Heading' && d.add.length && d.rem.length) return 'Heading level';
   if (name === 'Comment' || name === 'Code block' || name === 'HTML tag' || (name === 'Link' && d.add.length && d.rem.length)) return name + ' changed';
@@ -2408,7 +2487,8 @@ function build(A, B, items, ctx) {
     let y = x; while (y < n && (items[y].k === 'del' || items[y].k === 'ins')) y++;
     const da = [], ib = [];
     for (let z = x; z < y; z++) if (items[z].h == null && unitOf(items[z]).kind === 's') (items[z].k === 'del' ? da : ib).push(unitOf(items[z]));
-    const mixed = da.length > 0 && ib.length > 0 && akin(da, ib, ctx.idf);
+    // (not where the lining up already found the two sides unrelated: loosenBreaks)
+    const mixed = da.length > 0 && ib.length > 0 && !items.slice(x, y).some(it => it.loose) && akin(da, ib, ctx.idf);
     let plain = null, side = '';
     for (let z = x; z < y; z++) {
       const it = items[z];
@@ -2785,15 +2865,16 @@ function compare(textA, textB, opt) {
 const RE_CRITIC = /\{(?:\+\+|--|~~|>>|==)|(?:\+\+|--|~~|<<|==)\}/;
 
 /* ---------- merge (accept / reject) ---------- */
-// Rebuilds the text token by token. The whitespace before a token comes from the draft in which it followed the token
-// just written. Where tokens that were never neighbours meet (a kept word after a dropped one), it falls back to a
-// paragraph break, the token's own space, or the space that followed the previous token, so words never glue together.
-// With `mark` (the CriticMarkup export), the changes it picks are written as {++ ++}, {-- --} and {~~ ~> ~~} instead.
-function assemble(M, isNew, fmtNew, mark) {
-  const { A, B, entries, hunks } = M;
-  const L = M.layout != null ? hunks[M.layout] : null;
-  let out = (L ? isNew(L) : fmtNew) ? B.lead : A.lead;
-  let la = -1, lb = -1, atStart = true, lastSep = 0, last = null, afterGroup = false;
+// One reading of the comparison, written token by token: isNew says which side of each change it takes. The whitespace
+// before a token comes from the draft in which it followed the token just written. Where tokens that were never
+// neighbours meet (a kept word after a dropped one), it falls back to a paragraph break, the token's own space, or the
+// space that followed the previous token, so words never glue together.
+// Returns a function to call with each entry in turn. It gives what the entry adds to the text: null, or
+// [the space before the token, the token].
+function reader(M, isNew, fmtNew) {
+  const { A, B, hunks } = M;
+  // held: a paragraph break, written with the words that come after it (so one that nothing follows is never written)
+  let la = -1, lb = -1, atStart = true, last = null, held = '';
   const txt = t => t.kind === K_PB || t.kind === K_EOF ? t.sep : t.t;
   const brk = t => t.kind === K_PB || t.kind === K_EOF;
   const sepBefore = (D, i) => { const p = D.toks[i - 1]; return p && p.kind === K_PB ? p.pre + p.sep : D.mode === 'blank' ? '\n\n' : '\n'; };
@@ -2813,97 +2894,80 @@ function assemble(M, isNew, fmtNew, mark) {
     const nx = last && last.D.toks[last.i + 1];
     return [t, nx ? (brk(nx) ? ' ' : nx.pre) : ''];
   };
-  const put = (t, ws, s) => {
-    if (t.kind === K_PB) { if (atStart) return; out += ws + s; lastSep = ws.length + s.length; atStart = true; return; }
-    if (t.kind === K_EOF) { if (atStart && lastSep) out = out.slice(0, out.length - lastSep); out += (atStart ? '' : ws) + s; return; }
-    out += ws + s; atStart = false; lastSep = 0;
-  };
-  const flags = H => H.finfo.map(f => CATS[f[0]].label + ': ' + f[1]);
-  // Moved text stands at one of its two places: the new one if its move is taken, the old one if not.
-  const here = e => !e.mv || (e.mv === 'dst') === isNew(hunks[e.m]);
-  // One CriticMarkup group, from entry x on. g.a and g.b: the old and the new text; g.notes: what the comment says.
-  const group = x => {
-    const e = entries[x], g = { a: '', b: '', lastA: -1, lastB: -1, y: x, notes: [] };
-    const add = (D, i) => { const t = D.toks[i]; if (D === A) { g.a += t.pre + txt(t); g.lastA = i; } else { g.b += t.pre + txt(t); g.lastB = i; } };
-    if (!e.mv || !mark(hunks[e.m])) {
-      // the run of an open change's entries at one place
-      for (; g.y < entries.length && entries[g.y].h === e.h && entries[g.y].k !== '=' && entries[g.y].mv === e.mv; g.y++) {
-        const f = entries[g.y];
-        if (f.k !== '+') add(A, f.a);
-        if (f.k !== '-') add(B, f.b);
-      }
-      g.notes = flags(hunks[e.h]);
-      return g;
-    }
-    // One place of an open move: the text as it stands there if the move is taken (the new place) or refused (the
-    // old one). An open edit inside it goes along: refused at the old place, taken at the new one.
-    const dst = e.mv === 'dst', kids = new Set();
-    let s = '';
-    for (; g.y < entries.length && entries[g.y].m === e.m && entries[g.y].mv === e.mv; g.y++) {
-      const f = entries[g.y], C = f.h != null && f.h !== f.m ? hunks[f.h] : null;
-      const take = C ? (mark(C) ? dst : isNew(C)) : dst; // (no change of its own: a word that stayed, or a paragraph break the move carries)
-      if (C && mark(C)) kids.add(C);
-      if (f.k !== '=' && f.k !== '~' && (f.k === '+') !== take) continue;
-      const i = take ? f.b : f.a, t = (take ? B : A).toks[i];
-      s += t.pre + txt(t);
-      if (take) g.lastB = i; else g.lastA = i;
-    }
-    // the whole place is one suggestion, whichever draft each of its words came from
-    if (dst) g.b = s; else g.a = s;
-    g.notes = [dst ? 'moved here' : 'moved from here'];
-    for (const C of kids) for (const n of flags(C)) g.notes.push(n);
-    return g;
-  };
-  for (let x = 0; x < entries.length; x++) {
-    const e = entries[x];
+  return e => {
+    // Moved text stands at one of its two places: the new one if its move is taken, the old one if not.
+    if (e.mv && (e.mv === 'dst') !== isNew(hunks[e.m])) return null;
     const H = e.h != null ? hunks[e.h] : null;
-    let g = null;
-    if (mark && e.mv && mark(hunks[e.m])) g = group(x);
-    else if (!here(e)) continue;
-    else if (mark && H && e.k !== '=' && mark(H)) g = group(x);
-    if (g) {
-      let { a, b } = g;
-      if (atStart) { a = a.replace(/^[ \t]+/, ''); b = b.replace(/^[ \t]+/, ''); }
-      const lead = a && b ? (/^\s+/.exec(a) || [''])[0] : '';
-      if (lead && b.startsWith(lead)) { out += lead; a = a.slice(lead.length); b = b.slice(lead.length); }
-      if (a && b) out += '{~~' + a + '~>' + b + '~~}'; else if (a) out += '{--' + a + '--}'; else if (b) out += '{++' + b + '++}';
-      if (a || b) { if (g.notes.length) out += '{>>' + g.notes.join('; ') + '<<}'; atStart = false; lastSep = 0; }
-      if (g.lastA >= 0) la = g.lastA;
-      if (g.lastB >= 0) lb = g.lastB;
-      last = g.lastB >= 0 ? { D: B, i: g.lastB } : g.lastA >= 0 ? { D: A, i: g.lastA } : last;
-      afterGroup = true;
-      x = g.y - 1; continue;
-    }
     let ia = -1, ib = -1;
     if (e.k === '=' || e.k === '~') { ia = e.a; ib = e.b; }
-    else if (e.k === '-') { if (isNew(H)) continue; ia = e.a; }
-    else { if (!isNew(H)) continue; ib = e.b; }
+    else if (e.k === '-') { if (isNew(H)) return null; ia = e.a; }
+    else { if (!isNew(H)) return null; ib = e.b; }
     const ta = ia >= 0 ? A.toks[ia] : null, tb = ib >= 0 ? B.toks[ib] : null;
-    const PH = e.ph != null ? hunks[e.ph] : null;
-    let [t, ws] = space(ta, tb, ia, ib, e);
-    // spacing that differs right after a change (or in an open spacing change) is part of the suggestion too
-    if (mark && ta && tb && ia === la + 1 && ib === lb + 1 && ta.pre !== tb.pre && (afterGroup || (PH && PH.kind === 'space' && !PH.layout && mark(PH)))) {
-      ws = ta.pre && tb.pre ? '{~~' + ta.pre + '~>' + tb.pre + '~~}' : ta.pre ? '{--' + ta.pre + '--}' : '{++' + tb.pre + '++}';
-    }
-    const word = e.k === '~' ? (isNew(H) ? tb.t : ta.t) : txt(t);
-    put(t, ws, word);
-    afterGroup = false;
+    const [t, ws] = space(ta, tb, ia, ib, e), s = e.k === '~' ? (isNew(H) ? tb.t : ta.t) : txt(t);
     la = ia >= 0 ? ia : -9; lb = ib >= 0 ? ib : -9;
     last = ib >= 0 ? { D: B, i: ib } : { D: A, i: ia };
-  }
-  const pick = (id, k) => id != null ? (isNew(hunks[id]) ? B[k] : A[k]) : fmtNew ? B[k] : A[k];
+    if (t.kind === K_PB) { if (!atStart) { held = ws + s; atStart = true; } return null; }
+    if (t.kind === K_EOF) { held = ''; return [(atStart ? '' : ws) + s, '']; } // (what a text ends with is all space)
+    const w = held + ws; held = ''; atStart = false;
+    return [w, s];
+  };
+}
+// The blank lines a text opens with, its line endings and its byte-order mark: each from the draft that its change, or
+// fmtNew where the drafts agree, picks.
+function framed(M, isNew, fmtNew, body) {
+  const pick = (id, k) => (id != null ? isNew(M.hunks[id]) : fmtNew) ? M.B[k] : M.A[k];
+  let out = pick(M.layout, 'lead') + body;
   const eol = pick(M.eolHunk, 'eol');
   if (eol === 'crlf') out = out.replace(/\n/g, '\r\n'); else if (eol === 'cr') out = out.replace(/\n/g, '\r');
   return (pick(M.bomHunk, 'bom') ? '\uFEFF' : '') + out;
 }
-function merge(M, isNew, fmtNew) { return assemble(M, isNew, fmtNew === undefined ? true : fmtNew, null); }
+function merge(M, isNew, fmtNew) {
+  if (fmtNew === undefined) fmtNew = true;
+  const read = reader(M, isNew, fmtNew);
+  let out = '';
+  for (const e of M.entries) { const p = read(e); if (p) out += p[0] + p[1]; }
+  return framed(M, isNew, fmtNew, out);
+}
 
 /* ---------- CriticMarkup export ---------- */
-// Decided changes are applied; the ones still open become CriticMarkup suggestions (accepting all of them gives the
-// revised text, rejecting all gives the original). Line wrapping follows the revised text.
+// Decided changes are applied; the ones still open become CriticMarkup suggestions: {++ ++}, {-- --} and {~~ ~> ~~}.
+// The text is read twice in step, once taking every open change and once refusing it. Where the two readings write the
+// same, that is plain text; where they differ, it is a suggestion. So taking every suggestion gives exactly the text
+// with the open changes accepted, and refusing them the text with those changes rejected. (Line wrapping follows the
+// revised text either way.) A change is one suggestion, with what it is flagged for as a comment; an open move is one
+// at each of its two places, its open edits refused at the old place and taken at the new one.
 function critic(M, decision) {
-  const d = h => decision ? decision(h) : null;
-  return assemble(M, h => d(h) ? d(h) === 'acc' : true, true, h => !d(h) && !h.layout && !h.meta);
+  const { hunks } = M, d = h => decision ? decision(h) : null;
+  const open = h => !d(h) && !h.layout && !h.meta, base = h => d(h) ? d(h) === 'acc' : true;
+  const taken = reader(M, base, true), refused = reader(M, h => !open(h) && base(h), true);
+  const flags = H => H.finfo.map(f => CATS[f[0]].label + ': ' + f[1]);
+  let out = '', g = null; // g: the suggestion being written. r, t: what stands there refused and taken; key: whose it is
+  const end = () => {
+    if (!g) return;
+    let { r, t } = g, n = 0;
+    while (n < r.length && r[n] === t[n] && /\s/.test(r[n])) n++; // the space both open with stays outside
+    out += r.slice(0, n); r = r.slice(n); t = t.slice(n);
+    if (r && t) out += '{~~' + r + '~>' + t + '~~}'; else if (r) out += '{--' + r + '--}'; else if (t) out += '{++' + t + '++}';
+    if ((r || t) && g.notes.length) out += '{>>' + g.notes.join('; ') + '<<}';
+    g = null;
+  };
+  for (const e of M.entries) {
+    const pr = refused(e), pt = taken(e);
+    if (!pr && !pt) continue;
+    if (pr && pt && pr[1] === pt[1]) {
+      // the same word either way: where the space before it differs, that belongs to the suggestion it follows
+      if (pr[0] !== pt[0]) { if (!g) g = { r: '', t: '', notes: [] }; g.r += pr[0]; g.t += pt[0]; end(); } else { end(); out += pt[0]; }
+      out += pt[1];
+      continue;
+    }
+    const mv = !!e.mv && open(hunks[e.m]), key = mv ? e.mv + e.m : e.h;
+    if (!g || g.key !== key) { end(); g = { key, r: '', t: '', notes: mv ? [e.mv === 'dst' ? 'moved here' : 'moved from here'] : flags(hunks[e.h]), kids: new Set() }; }
+    if (mv && e.h != null && e.h !== e.m && open(hunks[e.h]) && !g.kids.has(e.h)) { g.kids.add(e.h); for (const n of flags(hunks[e.h])) g.notes.push(n); }
+    if (pr) g.r += pr[0] + pr[1];
+    if (pt) g.t += pt[0] + pt[1];
+  }
+  end();
+  return framed(M, base, true, out);
 }
 
 /* ---------- HTML renderers (pure string builders) ---------- */
@@ -3026,6 +3090,9 @@ function renderUnified(M, o) {
       continue;
     }
     if (skipPlus.has(x)) continue;
+    // One paragraph taken out and another put in its place, as two changes: the new one opens a paragraph of its own
+    // here too, as it does in the Final text when both are kept. (Run together, they read "…the end.The start…".)
+    if (e.k === '+' && tok.first && blk && blk.ok && blk.n && blk.side === '-' && blk.h !== (e.ride != null ? e.ride : e.h)) finishPara(true);
     noteBlk(e);
     let lead = false;
     if (e.ride != null && !tagged.has(e.end + e.ride)) {
@@ -3192,10 +3259,23 @@ function contextBefore(M, h, nWords) {
   }
   return s && !start && x >= 0 ? '…' + s : s;
 }
+// The stretch of text a change of word order runs over, from its first mark to its last, as each draft has it. (The
+// words that moved say nothing alone: a "not" that went to another clause would read “not” → “not”.)
+function spanOf(M, h) {
+  const { entries } = M, mv = entries[h.first].mv, a = [], b = [];
+  let last = h.first;
+  for (let x = h.first; x < entries.length && x - last < 400; x++) if (entries[x].h === h.id && entries[x].mv === mv) last = x;
+  for (let x = h.first; x <= last; x++) {
+    const e = entries[x]; if (e.mv !== mv) continue;
+    if (e.k !== '+') a.push(e.a);
+    if (e.k !== '-') b.push(e.b);
+  }
+  return [a, b];
+}
 
 return {
   K: { W: K_W, N: K_N, P: K_P, PB: K_PB, EOF: K_EOF, M: K_M }, CATS, TIERS, FLAG_ORDER,
-  compare, merge, critic, docStats, countWords, countDoc, charDiff, esc, vis, textOf, contextBefore,
+  compare, merge, critic, docStats, countWords, countDoc, charDiff, esc, vis, textOf, contextBefore, spanOf,
   renderUnified, renderSplit,
   _t: { lcs, parseDoc, tokenizePara, splitSentences, stem, usify, isTypo, typoEvidence, canonNum, expand },
 };
@@ -3209,7 +3289,7 @@ return {
 // The version is also written in the comment at the top of the file (the tests keep the two in step).
 // Diffy is made to be downloaded once and then used for months from someone's own computer, so nothing in it is a
 // clickable link and nothing in it needs the internet: an address is always plain text to copy.
-const VERSION = '1.0.5', SOURCE = 'github.com/krulsenpai/diffy';
+const VERSION = '1.0.6', SOURCE = 'github.com/krulsenpai/diffy';
 const ONLINE = /^https?:$/.test(location.protocol); // opened from a website, not from a file on this computer
 const TITLE = document.title; // the page's own title, put back whenever no comparison is on screen
 const E = Engine, CATS = E.CATS, esc = E.esc, vis = E.vis;
@@ -3691,7 +3771,8 @@ function snippet(h, max) {
     }
     return ctxHtml(h) + '<del>' + a + '</del> <span class="arrow">→</span> <ins>' + b + '</ins>';
   }
-  const a = E.textOf(M.A, h.a, max), b = E.textOf(M.B, h.b, max);
+  const [la, lb] = h.reorder ? E.spanOf(M, h) : [h.a, h.b];
+  const a = E.textOf(M.A, la, max), b = E.textOf(M.B, lb, max);
   const pa = a ? '<del>' + vis(a, true) + '</del>' : '', pb = b ? '<ins>' + vis(b, true) + '</ins>' : '';
   return (h.unit ? '' : ctxHtml(h)) + pa + (pa && pb ? ' <span class="arrow">→</span> ' : '') + pb;
 }

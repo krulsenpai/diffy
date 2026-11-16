@@ -148,15 +148,24 @@ test('round trip: 3,000 random edits', () => {
   }
 });
 
-test('any mix of decisions merges, renders and exports without an error', () => {
+test('with any mix of decisions, the Final text holds the words that were chosen: none glued together, none lost', () => {
+  const isWord = t => t.kind === E.K.W || t.kind === E.K.N;
   const rnd = random(777);
   for (let run = 0; run < 1000; run++) {
     const { a, b, opt } = randomPair(rnd), M = E.compare(a, b, opt);
     const dec = new Map();
     for (const id of M.order) { const r = rnd(); if (r < 0.4) dec.set(id, 'acc'); else if (r < 0.8) dec.set(id, 'rej'); }
+    for (const pend of [true, false]) {
+      const isNew = h => dec.has(h.id) ? dec.get(h.id) === 'acc' : pend, out = E.merge(M, isNew, pend), chosen = [];
+      for (const e of M.entries) {
+        if (e.mv && (e.mv === 'dst') !== isNew(M.hunks[e.m])) continue; // moved text stands at one of its two places
+        const side = e.k === '=' ? 'b' : (e.k === '~' ? isNew(M.hunks[e.h]) : e.k === '+') ? 'b' : 'a';
+        const t = e.k === '-' && isNew(M.hunks[e.h]) || e.k === '+' && !isNew(M.hunks[e.h]) ? null : (side === 'b' ? M.B.toks[e.b] : M.A.toks[e.a]);
+        if (t && isWord(t)) chosen.push(t.t);
+      }
+      assert.deepEqual(E._t.parseDoc(out, opt).toks.filter(isWord).map(t => t.t), chosen, 'run ' + run + ', undecided changes ' + (pend ? 'accepted' : 'rejected'));
+    }
     const isNew = h => dec.has(h.id) ? dec.get(h.id) === 'acc' : true;
-    assert.equal(typeof E.merge(M, isNew, true), 'string');
-    assert.equal(typeof E.merge(M, h => dec.get(h.id) === 'acc', false), 'string');
     assert.equal(typeof E.critic(M, h => dec.get(h.id) || null), 'string');
     E.renderUnified(M, { markup: false, cls: h => dec.has(h.id) ? ' ' + dec.get(h.id) : '' });
   }
@@ -320,7 +329,8 @@ test('an edit made to moved text is a change of its own, decided apart from the 
   // CriticMarkup: an open move is one suggestion at each place, its open edit taken at the new one and refused at the
   // old one; once the move is decided, the edit is a suggestion of its own where the sentence stands
   const note = '; Numbers & dates: “4” → “14”<<}', cm = E.critic(M, () => null);
-  assert.ok(cm.includes('{++' + meeting(14) + '++}{>>moved here' + note) && cm.includes('{-- ' + meeting(4) + '--}{>>moved from here' + note), cm);
+  // (the space between the moved sentence and the one it now stands in front of comes and goes with it)
+  assert.ok(cm.includes('\n\n{++' + meeting(14) + ' ++}{>>moved here' + note + 'The committee') && cm.includes('{-- ' + meeting(4) + '--}{>>moved from here' + note), cm);
   const kept = E.critic(M, h => h === mv ? 'acc' : null);
   assert.ok(kept.includes('\n\nA public meeting is scheduled for March {~~4~>14~~}') && !kept.includes('railings. A public'), kept);
 });
@@ -697,18 +707,52 @@ test('inline, moved text is drawn right whether its move is accepted or rejected
   assert.ok(moves > 25, 'the random edits should produce moves to check (got ' + moves + ')');
 });
 
-test('taking every CriticMarkup suggestion gives the revised text, refusing them the original, on random edits', () => {
-  // (Not checked: the indentation at the start of a line, which the export can lose in a suggestion that opens the text.)
-  const take = (s, yes) => s.replace(/\{>>[\s\S]*?<<\}/g, '').replace(/\{\+\+([\s\S]*?)\+\+\}/g, (m, x) => yes ? x : '').replace(/\{--([\s\S]*?)--\}/g, (m, x) => yes ? '' : x).replace(/\{~~([\s\S]*?)~>([\s\S]*?)~~\}/g, (m, x, y) => yes ? y : x);
-  const unindent = s => s.replace(/^[ \t]+/gm, ''), flat = s => s.replace(/\s+/g, ' ').trim();
+// what a CriticMarkup editor makes of the export when every suggestion in it is taken, or refused
+const take = (s, yes) => s.replace(/\{>>[\s\S]*?<<\}/g, '').replace(/\{\+\+([\s\S]*?)\+\+\}/g, (m, x) => yes ? x : '').replace(/\{--([\s\S]*?)--\}/g, (m, x) => yes ? '' : x).replace(/\{~~([\s\S]*?)~>([\s\S]*?)~~\}/g, (m, x, y) => yes ? y : x);
+
+test('CriticMarkup: taking every suggestion gives the Final text, refusing them the text with those changes rejected, on random edits and decisions', () => {
+  // The export and the Final text are written by the same code, so they agree to the letter whatever was decided.
+  // With nothing decided, that is the revised text, and the words of the original (its line breaks and indentation
+  // follow the revised text, by design).
+  const flat = s => s.replace(/\s+/g, ' ').trim();
   const rnd = random(8086);
-  for (let run = 0; run < 1500; run++) {
-    const { a, b, opt } = randomPair(rnd), M = E.compare(a, b, opt);
+  for (let run = 0; run < 2000; run++) {
+    const { a, b, opt } = randomPair(rnd), M = E.compare(a, b, opt), dec = new Map();
+    if (run % 3) for (const id of M.order) { const r = rnd(); if (r < 0.3) dec.set(id, 'acc'); else if (r < 0.6) dec.set(id, 'rej'); }
     if (M.critic) continue; // the drafts already hold CriticMarkup symbols
-    const cm = E.critic(M, null), where = 'run ' + run + '\n' + cm;
-    assert.equal(unindent(take(cm, true)), unindent(b), where);
-    assert.equal(flat(take(cm, false)), flat(a), where);
+    const d = h => dec.get(h.id) || null, open = h => !d(h) && !h.layout && !h.meta;
+    const cm = E.critic(M, d), where = 'run ' + run + '\n' + cm;
+    assert.equal(take(cm, true), E.merge(M, h => d(h) ? d(h) === 'acc' : true, true), where);
+    assert.equal(take(cm, false), E.merge(M, h => d(h) ? d(h) === 'acc' : !open(h), true), where);
+    if (!dec.size) { assert.equal(take(cm, true), b, where); assert.equal(flat(take(cm, false)), flat(a), where); }
   }
+});
+
+test('CriticMarkup: a paragraph that is kept and one that is suggested stay two paragraphs', () => {
+  // a paragraph taken out and another put in: with the removal refused, the new paragraph was glued onto the old one
+  const a = 'The intro stays as it is.\n\nThe charter was amended in 1923 to admit women.\n', b = 'The intro stays as it is.\n\nExtend the misting array to Chambers 6 and 7.\n';
+  const M = E.compare(a, b, {}), [rem, add] = M.order.map(id => M.hunks[id]);
+  assert.equal(E.critic(M, h => h === rem ? 'rej' : null), 'The intro stays as it is.\n\nThe charter was amended in 1923 to admit women.{++\n\nExtend the misting array to Chambers 6 and 7.++}\n');
+  assert.equal(E.critic(M, h => h === add ? 'acc' : null), 'The intro stays as it is.{--\n\nThe charter was amended in 1923 to admit women.--}\n\nExtend the misting array to Chambers 6 and 7.\n');
+  // a paragraph split is one suggestion, and the indentation of a paragraph stays outside the suggestion that opens it
+  assert.equal(E.critic(E.compare('One sentence here. Another sentence there.\n', 'One sentence here.\n\nAnother sentence there.\n', {}), null), 'One sentence here.{~~ ~>\n\n~~}Another sentence there.\n');
+  assert.equal(E.critic(E.compare('  Alpha beta.\n', '  beta.\n', {}), null), '  {--Alpha --}beta.\n');
+  assert.equal(E.critic(E.compare('Intro stays.\n', '  Indented intro stays.\n', {}), null), '{++  Indented++}{~~Intro~> intro~~} stays.\n');
+});
+
+test('a word in front of "I" is no name for the capital of "I"', () => {
+  // "Should I…" was read as a name, which also hid what the word really is
+  assert.deepEqual(flagsOf('Should I sign it?', 'Must I sign it?'), ['modal: “should” → “must”']);
+  assert.deepEqual(flagsOf('May I come in?', 'Can I come in?'), ['modal: “may” → “can”']);
+  assert.deepEqual(read('Later I left the room.', 'Afterwards I left the room.'), ['Reworded']);
+  // a capitalized word after it still makes a name of the first word of a sentence
+  assert.deepEqual(read('New York was chosen.', 'New Jersey was chosen.'), ['Reworded [name]']);
+});
+
+test('a degree sign and its letter are the unit of the figure before them', () => {
+  assert.deepEqual(flagsOf('Store it at 4 °C overnight.', 'Store it at 4 °F overnight.'), ['number: “4 °C” → “4 °F”']);
+  assert.deepEqual(flagsOf('Heat the oven to 180°C.', 'Heat the oven to 200°C.'), ['number: “180°C” → “200°C”']);
+  assert.deepEqual(read('Keep it at 4 °C overnight.', 'Store it at 4 °C overnight.'), ['Reworded']);
 });
 
 /* ---------- found with two Word files full of planted traps ---------- */
@@ -888,4 +932,77 @@ test('Word: the main part by another name, and files that are no .docx', async (
   await assert.rejects(readFile('locked.docx', old), /protected with a password/);
   await assert.rejects(readFile('sheet.xls', old), /isn’t plain text or a Word document/);
   await assert.rejects(readFile('broken.docx', zip({ 'word/document.xml': '<w:document ' + NS + '><w:body>' })), /looks damaged/);
+});
+
+/* ---------- text that changed places ---------- */
+test('of two pieces of text that changed places, the lighter one is what moved', () => {
+  // two list items changed places and a third was edited on the spot: the edit is read where it stands. (Which of
+  // the two came out as "moved" used to be chance, and the bigger block could travel with the edit inside it.)
+  const M = E.compare('- Bring your passport\n- Arrive two hours early\n- Check in online\n- Pack light\n', '- Check in online\n- Bring your passport\n- Arrive three hours early\n- Pack light\n', {});
+  assert.deepEqual(labels(M), ['Paragraph moved', 'Reworded [number]']);
+  assert.equal(E.textOf(M.B, M.hunks[M.order[0]].b, 0), '- Check in online');
+  // a short paragraph and a long one changed places: the short one moved, whichever of them came first
+  const long = 'The Supplier shall deliver the Goods to the Delivery Address within thirty days of the order.', short = 'Risk passes on delivery.';
+  for (const [x, y] of [[long, short], [short, long]]) {
+    const R = E.compare('Intro stays.\n\n' + x + '\n\n' + y + '\n\nEnd stays.\n', 'Intro stays.\n\n' + y + '\n\n' + x + '\n\nEnd stays.\n', {});
+    assert.deepEqual(R.order.map(id => label(R.hunks[id]) + ': ' + E.textOf(R.B, R.hunks[id].b, 0)), ['Paragraph moved: ' + short]);
+  }
+});
+
+/* ---------- smaller things ---------- */
+test('a figure changed next to a table cell that was added is a change of its own', () => {
+  assert.deepEqual(read('Cat | 10.3% | Stable', 'Cat | 56.8% | New owner | Stable'), ['Reworded [number]', 'Added']);
+});
+
+test('one kind of formatting put for another is named', () => {
+  assert.deepEqual(read('This is **very** important.', 'This is *very* important.'), ['Bold → italics']);
+  assert.deepEqual(read('This is **very** important.', 'This is very important.'), ['Bold removed']);
+});
+
+test('the preview of a change in word order runs from its first mark to its last', () => {
+  // the words that moved say nothing alone: this one read “not” → “not”
+  const M = E.compare('The tenant may not sublet, and the landlord must repair the roof.\n', 'The tenant may sublet, and the landlord must not repair the roof.\n', {});
+  const [a, b] = E.spanOf(M, M.hunks[M.order[0]]);
+  assert.deepEqual([E.textOf(M.A, a, 0), E.textOf(M.B, b, 0)], ['not sublet, and the landlord must', 'sublet, and the landlord must not']);
+});
+
+test('a section that moved takes its heading along, also when the heading was renamed', () => {
+  // a heading is a word or two: alone it is no move, next to moved text at both of its places it went along
+  const P = list => list.join('\n\n') + '\n';
+  const pay = 'We pay monthly, on the last working day of the month.', notice = 'Either party may end this agreement by giving thirty days of notice in writing.';
+  const M = E.compare(P(['Scope', 'This covers all staff.', 'Payment', pay, 'Notice', notice]), P(['Scope', 'This covers all staff.', 'Notice period', notice, 'Payment', pay]), {});
+  assert.deepEqual(M.order.map(id => label(M.hunks[id]) + ': ' + E.textOf(M.B, M.hunks[id].b, 0)), ['Paragraph moved: Payment ¶ ' + pay, 'Added: period']);
+  // the heading of the moved section itself renamed: an edit made on the way, decided apart from the move
+  assert.deepEqual(read('# Scope\n\nThis covers all staff.\n\n# Payment\n\nWe pay monthly.\n\n# Notice\n\nGive 30 days.', '# Scope\n\nThis covers all staff.\n\n# Notice period\n\nGive 30 days.\n\n# Payment\n\nWe pay monthly.'), ['Paragraph moved & edited', 'Added']);
+  // a short answer that is found again elsewhere, with nothing moved beside it, is still no move
+  assert.deepEqual(read('Yes.\n\nThe first paragraph stays here.\n\nThe second paragraph stays too.', 'The first paragraph stays here.\n\nThe second paragraph stays too.\n\nYes.'), ['Paragraph removed', 'Paragraph added']);
+});
+
+test('inline: a paragraph taken out and another put in its place are two paragraphs', () => {
+  // two changes since 1.0.5, and drawn in one paragraph they ran together: "…admit women.Extend the misting…"
+  const M = E.compare('Intro stays the same.\n\nThe charter was amended in 1923 to admit women.\n\nClosing stays the same.\n', 'Intro stays the same.\n\nExtend the misting array to Chambers 6 and 7.\n\nClosing stays the same.\n', {});
+  assert.match(E.renderUnified(M, {}), /women\.<\/del><\/span><\/p><p [^>]*blk-ins[^>]*><span [^>]*><ins class="i">Extend/);
+  // one change stays one paragraph: a first word put for another, a sentence rewritten
+  const paras = (a, b) => (E.renderUnified(E.compare(a + '\n', b + '\n', {}), {}).match(/<p /g) || []).length;
+  assert.equal(paras('Customers may cancel at any time.', 'Clients may cancel at any time.'), 1);
+  assert.equal(paras('Our team worked hard to finish the project before the deadline despite many setbacks.', 'Despite numerous obstacles, the project was completed on schedule thanks to the team\'s dedication.'), 1);
+});
+
+test('paragraphs taken out and unrelated ones put in come as two blocks, not one by one in turn', () => {
+  // the breaks between them used to be paired off by position: removed, added, removed, added, removed, added
+  const P = list => list.join('\n\n') + '\n', ends = ['The intro stays the same in both drafts.', 'The closing stays the same in both drafts.'];
+  const out = ['The charter was amended in 1923 to admit women.', 'Members pay their dues before the spring meeting.', 'The cellar is inspected by the warden each month.'];
+  const put = ['Extend the misting array to Chambers 6 and 7.', 'Order two hundred oak shelves from the joiner.', 'A new hygrometer goes into every ripening room.'];
+  const a = P([ends[0], ...out, ends[1]]), b = P([ends[0], ...put, ends[1]]), M = E.compare(a, b, {});
+  assert.deepEqual(labels(M), ['Paragraph removed', 'Paragraph removed', 'Paragraph removed', 'Paragraph added', 'Paragraph added', 'Paragraph added']);
+  assert.equal(acceptAll(M), b); assert.equal(rejectAll(M), a);
+  // each is still decided by itself: the second paragraph kept, the second new one taken
+  assert.equal(E.merge(M, h => h === M.hunks[M.order[4]], false), P([ends[0], ...out, put[1], ends[1]]));
+  // paragraphs rewritten where they stood are still read one against the other
+  assert.deepEqual(read('Intro stays.\n\nThe committee meets on the first Monday of each month in the hall.\n\nMembers of the committee serve for two years.\n\nEnd stays.',
+    'Intro stays.\n\nMeetings of the committee take place monthly, usually in the old hall.\n\nA member serves on the committee for a term of three years.\n\nEnd stays.').length, 2);
+  // and the heading of a section that moved goes with it, also beside a paragraph that was replaced
+  const pay = 'We pay monthly, on the last working day of the month.', notice = 'Either party may end this agreement by giving thirty days of notice.';
+  const R = E.compare(P(['Scope', 'Payment', pay, 'Notice', notice, out[0], ends[1]]), P(['Scope', 'Notice', notice, 'Payment', pay, put[0], ends[1]]), {});
+  assert.deepEqual(R.order.map(id => label(R.hunks[id]) + ': ' + (E.textOf(R.B, R.hunks[id].b, 0) || E.textOf(R.A, R.hunks[id].a, 0))), ['Paragraph moved: Payment ¶ ' + pay, 'Paragraph removed: ' + out[0], 'Paragraph added: ' + put[0]]);
 });

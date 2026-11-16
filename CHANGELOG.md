@@ -2,6 +2,19 @@
 
 Diffy cannot check for updates, so this page is where you find out what changed. Press `?` inside Diffy to see which version you have.
 
+## 1.0.6
+
+Exports you can rely on, and a truer reading of text that changed places. There is nothing new to learn.
+
+- **The CriticMarkup export agrees with the Final text.** With some changes accepted, some rejected and some left open, the exported file could differ from what Diffy showed: a paragraph you kept and one still open could run together into one. Now taking every suggestion in the file gives exactly the Final text, and refusing them gives the text with those changes rejected.
+- **CriticMarkup keeps indentation.** A suggestion at the start of an indented paragraph lost the indentation.
+- **Two things that changed places.** When two list items or two paragraphs swap, either one can be called "the one that moved". Diffy now picks the shorter one, and a sentence that was edited where it stands is compared there. Before, a list with two items swapped and a third one edited could read as one bigger block, "moved & edited".
+- **A section that moved takes its heading along.** Move a section with a one-word heading, and Diffy used to show the heading removed in one place, the text moved, and the heading added in the other. Now it is one move. If the heading was renamed on the way, that is an edit of its own inside the move.
+- **Unrelated paragraphs come in two blocks.** When several paragraphs are taken out and others are put in their place, Diffy now shows the removed ones together, then the added ones. Before, they came one by one in turn, as if each old paragraph had turned into a new one. In the text itself, a removed paragraph and the one put in its place are now drawn as two paragraphs. They used to run together.
+- **"Should I…?" is not a name.** A word in front of "I" was taken for a name, because "I" is a capital. So "Should I sign?" turned into "Must I sign?" was flagged under Names. It is now flagged under Obligation, where it belongs.
+- **°C and °F.** "4 °C" turned into "4 °F" is flagged as a changed figure. Before, it was flagged as a changed name.
+- **Smaller things.** A changed word order now shows the whole stretch it runs over: a "not" that went to another clause used to preview as "not → not". In a table row, a figure that changed next to a cell that was added is a change of its own. Bold turned into italics is called "Bold → italics".
+
 ## 1.0.5
 
 Diffy was tried on two Word files full of planted traps. This version fixes what they showed. Word files are now read more fully, so the same two files can show changes that were invisible before.
