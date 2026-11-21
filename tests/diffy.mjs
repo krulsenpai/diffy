@@ -95,3 +95,41 @@ export function random(seed) {
   next.pick = list => list[Math.floor(next() * list.length)];
   return next;
 }
+
+// How decisions carry from one comparison to the next (the texts edited, Undo, Clear decisions), and how Diffy starts
+// over (another text in a box, a comparison setting switched, Swap) with a message whose Undo puts everything back: the
+// interface's own functions for it, cut out of the script by name and run on the real engine, with the page left out.
+// They are cut when decisions() is first called, and a name the script doesn't have is left out, so this module also
+// loads with an older diffy.html (and the tests of what that one lacks fail there).
+const DECISION_PARTS = ['pl', 'DEF', 'engineOpts', 'sameOpts', 'snapshot', 'yourDec', 'startOver', 'setTexts', 'typedOver', 'swapTexts', 'putState', 'replaced', 'onSetting', 'remap', 'ensureModel', 'clearDecisions', 'decide', 'undo', 'redo'];
+const CALLED = ['ensureModel', 'decide', 'undo', 'redo', 'clearDecisions', 'setTexts', 'typedOver', 'swapTexts', 'onSetting'];
+function cutOut(name) {
+  const m = new RegExp('^(?:function ' + name + '\\b|const ' + name + ' = )', 'm').exec(script);
+  if (!m) return '';
+  if (script.startsWith('const', m.index)) return script.slice(m.index, script.indexOf('\n', m.index)); // (a one-line const)
+  // to the brace that closes the function, past strings and comments
+  for (let j = script.indexOf('{', m.index), depth = 0, q = null; j < script.length; j++) {
+    const c = script[j];
+    if (q) { if (c === '\\') j++; else if (c === q) q = null; continue; }
+    if (c === '/' && script[j + 1] === '/') { j = script.indexOf('\n', j); continue; }
+    if (c === '/' && script[j + 1] === '*') { j = script.indexOf('*/', j) + 1; continue; }
+    if (c === "'" || c === '"' || c === '`') q = c;
+    else if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) return script.slice(m.index, j + 1);
+  }
+  throw new Error('diffy.html: the end of ' + name + ' was not found');
+}
+let make = null;
+// A fresh set of decisions: S holds the settings (the app's own defaults to begin with), set(a, b) puts texts in the
+// boxes as typing would, the messages Diffy would show are collected in toasts, and pressUndo() presses the Undo button
+// of the last one that had one.
+export function decisions() {
+  make ??= new Function('E', 'env', 'const { st, S, ta, tb } = env, noop = () => {}, afterDecide = noop, updateCounts = noop, updateLive = noop, save = noop, dropToast = noop;\n' +
+    'const toast = (m, o) => { env.toasts.push(m); if (o && o.action === "Undo") env.undoButton = o.run; };\n' + DECISION_PARTS.map(cutOut).join('\n') +
+    '\nObject.assign(S, JSON.parse(JSON.stringify(DEF)));\nreturn { ' + CALLED.map(n => n + ': typeof ' + n + ' === "function" ? ' + n + ' : undefined').join(', ') + ' };');
+  const env = {
+    st: { version: 1, M: null, dec: new Map(), undo: [], redo: [], cur: -1, listLimit: 400, screen: 'compose', names: { a: '', b: '' }, loaded: { a: '', b: '' } },
+    S: {}, ta: { value: '' }, tb: { value: '' }, toasts: [], undoButton: null,
+  };
+  return Object.assign(make(Engine, env), env, { set(a, b) { env.ta.value = a; env.tb.value = b; env.st.version++; }, pressUndo() { env.undoButton(); } });
+}

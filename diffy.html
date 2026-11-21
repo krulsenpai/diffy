@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Diffy 1.0.6: a private, offline, prose-aware diff tool. One file, no dependencies.
+  Diffy 1.0.7: a private, offline, prose-aware diff tool. One file, no dependencies.
   Source and newer versions: https://github.com/krulsenpai/diffy
   (Diffy cannot check for updates itself: it cannot reach the internet, by design.)
 
@@ -19,7 +19,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kqFd9xC3OTSoGA4oZJvq5CNV+cZsOXRjCZdDXnIbbg8='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-KkjfI71VXp6kQ++wy9jzr/HgEbDCS8W6x48sJcZsBbg='; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
@@ -205,6 +205,9 @@ main{min-height:0;position:relative}
 .finalbar{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--bg-2);font-size:13px;color:var(--tx-3);flex-wrap:wrap}
 .finalbar .spacer{flex:1}
 .dscroll{flex:1;overflow:auto;position:relative;scroll-padding:120px 0}
+/* (the text takes the focus after Compare so the keys scroll it. It draws no ring: one would frame the whole text, and
+   the selected change already shows where you are) */
+.dscroll:focus-visible{outline:none}
 .doc{padding:34px 48px 120px;font-family:var(--doc-font);font-size:var(--doc-size);line-height:1.72;color:var(--tx)}
 .doc .uni,.doc .final{max-width:var(--measure);margin:0 auto}
 .doc .uni p{margin:0 0 1em;overflow-wrap:anywhere}
@@ -302,7 +305,6 @@ del,ins{text-decoration:none}
 .sum-txt .link{border:0;background:none;padding:0;color:var(--tx-3);font-size:12.5px;cursor:pointer;text-decoration:underline;text-underline-offset:.2em}
 .sum-txt .link:hover{color:var(--tx)}
 .sum-done{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 18px 14px;border-bottom:1px solid var(--line);margin-top:-4px}
-.sum-note{padding:8px 18px;font-size:12px;color:var(--tx-3);border-bottom:1px solid var(--line);background:var(--bg-3)}
 .phead{display:none}
 .ptabs{display:flex;gap:4px;padding:10px 14px 0}
 .ptabs button{border:0;background:none;padding:7px 10px;border-radius:8px 8px 0 0;color:var(--tx-3);font-weight:500;cursor:pointer;border-bottom:2px solid transparent}
@@ -351,6 +353,7 @@ button.goto svg.ic{transform:rotate(90deg)}
 .ci-act button.on.rej{color:var(--del);background:var(--del-q)}
 .ci-flag{display:flex;gap:6px;align-items:baseline;margin:5px 0 0;font-size:12.5px;color:var(--flag);font-weight:500}
 .ci-flag b{font-weight:600}
+.ci-flag span{min-width:0;overflow-wrap:anywhere}
 .ci-txt{margin-top:5px;font:14.5px/1.5 var(--doc-font);color:var(--tx-2);overflow-wrap:anywhere}
 .ci-txt .ctx{color:var(--tx-4)}
 .ci-txt del{color:var(--del);background:var(--del-q);text-decoration-color:var(--del-line)}
@@ -393,19 +396,19 @@ td.dl.up{color:var(--ins)}td.dl.dn{color:var(--del)}
 .hc-cat{font-weight:600}
 .hc-sub{color:var(--tx-3)}
 .hc-idx{margin-left:auto;color:var(--tx-4);font-size:12px;font-variant-numeric:tabular-nums}
-.hc-flag{margin-top:8px;padding:8px 10px;border-radius:9px;background:var(--flag-bg);color:var(--tx);font-size:12.5px}
+.hc-flag{margin-top:8px;padding:8px 10px;border-radius:9px;background:var(--flag-bg);color:var(--tx);font-size:12.5px;overflow-wrap:anywhere}
 .hc-flag b{color:var(--flag);font-weight:600;margin-right:5px}
 .hc-diff{margin-top:9px;font:14.5px/1.5 var(--doc-font);color:var(--tx-2);max-height:150px;overflow:auto;overflow-wrap:anywhere}
 .hc-diff del{color:var(--del);background:var(--del-q)}
 .hc-diff ins{color:var(--ins);background:var(--ins-q);text-decoration:none;border-bottom:1px solid var(--ins-line)}
 .hc-diff .cx{font-weight:700}
-.hc-diff .arrow{color:var(--tx-4);margin:0 4px;font-family:var(--sans)}
+.hc-diff .arrow,.ci-txt .arrow{color:var(--tx-4);margin:0 4px;font-family:var(--sans)}
 .hc-act{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
 .hc-act .btn{height:30px;font-size:12.5px;padding:0 10px;gap:6px}
 .hc-act .btn kbd{font-size:10px;padding:1px 4px}
+.nokeys .hc-act kbd{display:none}
 .hc-act .btn.acc.on{background:var(--ins-q);border-color:var(--ins-line);color:var(--ins)}
 .hc-act .btn.rej.on{background:var(--del-q);border-color:var(--del-line);color:var(--del)}
-.hc-tip{margin-top:9px;color:var(--tx-4);font-size:11.5px}
 .scrim{position:fixed;inset:0;z-index:70;background:var(--scrim);display:grid;place-items:center;padding:20px;animation:fade .15s}
 @keyframes fade{from{opacity:0}}
 .modal{width:min(620px,100%);max-height:calc(100vh - 40px);overflow:auto;background:var(--bg);border-radius:18px;box-shadow:var(--shadow-lg),0 0 0 1px var(--line-2);padding:22px 24px 20px}
@@ -482,6 +485,8 @@ input[type=range]{accent-color:var(--accent);width:150px}
   .phead{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 0 18px;font:600 13px var(--sans);color:var(--tx-2)}
   #panelBtn{display:inline-flex;align-items:center;width:auto;padding:0 10px;gap:6px}
   .panel-lbl{display:inline;font-size:13px;font-weight:500}
+  /* messages stay clear of the buttons at the foot of the open review sheet */
+  body:has(.results.panel-open) .toasts{bottom:76px}
 }
 @media (max-width:820px){
   .compose{padding:16px 16px 0;display:block}
@@ -514,6 +519,9 @@ input[type=range]{accent-color:var(--accent);width:150px}
   .minimap .tk{height:6px}
 }
 @media (max-width:560px){
+  /* in Settings, a row of choices goes under its words instead of squeezing them to one word a line */
+  .set:has(.seg){flex-wrap:wrap}
+  .set:has(.seg) .lbl{flex-basis:100%}
   .split .row,.split-head{grid-template-columns:1fr}
   .split .cell.b{border-bottom:1px dashed var(--line);margin-bottom:1em}
   .split .cell.empty{display:none}
@@ -544,6 +552,8 @@ input[type=range]{accent-color:var(--accent);width:150px}
   .app,.results,.docpane,.dscroll{display:block;height:auto;overflow:visible}
   .doc{padding:0}
   .h .d,.h .i,.h.fl,.mvtag{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* the selected change, and the flash that showed it, belong to the screen */
+  .h,.blk{outline:none!important;box-shadow:none!important;animation:none!important}
 }
 /* red used as text or icon colour: --accent-ink, a lighter red that stays readable on dark backgrounds */
 .icon-btn.on,.banner .link,.fsum .link{color:var(--accent-ink)}
@@ -558,7 +568,7 @@ input[type=range]{accent-color:var(--accent);width:150px}
     <div class="top-right">
       <button class="pill" id="privBtn" title="What Diffy does with your text" aria-expanded="false" aria-haspopup="dialog"><i data-icon="lock"></i><span>Offline &amp; private</span></button>
       <button class="icon-btn" id="themeBtn" title="Theme" aria-label="Theme"><i data-icon="sun"></i></button>
-      <button class="icon-btn" id="helpBtn" title="How Diffy works, and shortcuts (?)" aria-label="Help and shortcuts"><i data-icon="help"></i></button>
+      <button class="icon-btn" id="helpBtn" title="How Diffy works, and shortcuts" data-key="?" aria-label="Help and shortcuts"><i data-icon="help"></i></button>
       <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings"><i data-icon="sliders"></i></button>
     </div>
   </header>
@@ -608,21 +618,22 @@ input[type=range]{accent-color:var(--accent);width:150px}
 
     <section class="results" id="results" hidden>
       <div class="docpane">
+        <h1 class="sr">What changed</h1>
         <div class="dtool"><div class="dtool-in">
-          <button class="btn ghost sm" id="editBtn" title="Edit the texts (E)"><i data-icon="back"></i>Edit</button>
+          <button class="btn ghost sm" id="editBtn" title="Edit the texts" data-key="E"><i data-icon="back"></i>Edit</button>
           <div class="seg" id="viewSeg" role="group" aria-label="View">
-            <button data-view="inline" title="Changes marked in one text (1)">Inline</button>
-            <button data-view="split" title="Original and revised side by side (2)">Side by side</button>
-            <button data-view="final" title="The text with your decisions applied, ready to copy (3)">Final</button>
+            <button data-view="inline" title="Changes marked in one text" data-key="1">Inline</button>
+            <button data-view="split" title="Original and revised side by side" data-key="2">Side by side</button>
+            <button data-view="final" title="The text with your decisions applied, ready to copy" data-key="3">Final</button>
           </div>
           <div class="spacer"></div>
           <div class="nav" id="nav">
-            <button class="icon-btn" id="prevBtn" title="Previous change (K)" aria-label="Previous change"><i data-icon="up"></i></button>
+            <button class="icon-btn" id="prevBtn" title="Previous change" data-key="K" aria-label="Previous change"><i data-icon="up"></i></button>
             <span class="navpos" id="navPos" aria-live="polite">–</span>
-            <button class="icon-btn" id="nextBtn" title="Next change (J)" aria-label="Next change"><i data-icon="down"></i></button>
+            <button class="icon-btn" id="nextBtn" title="Next change" data-key="J" aria-label="Next change"><i data-icon="down"></i></button>
           </div>
           <button class="btn ghost sm" id="exportTop" data-export title="Copy, download and export" aria-haspopup="menu" aria-expanded="false"><i data-icon="download"></i><span class="exp-lbl">Export</span></button>
-          <button class="icon-btn" id="panelBtn" title="Show or hide the review panel (L)" aria-label="Review panel" aria-controls="panel" aria-expanded="true"><i data-icon="panel"></i><span class="panel-lbl" id="panelLbl">Review</span></button>
+          <button class="icon-btn" id="panelBtn" title="Show or hide the review panel" data-key="L" aria-label="Review panel" aria-controls="panel" aria-expanded="true"><i data-icon="panel"></i><span class="panel-lbl" id="panelLbl">Review</span></button>
         </div></div>
         <div class="finalbar" id="finalBar" hidden>
           <span id="pendWrap"><span id="pendLbl">Undecided changes</span>
@@ -632,7 +643,7 @@ input[type=range]{accent-color:var(--accent);width:150px}
           <button class="btn sm" id="copyFinal"><i data-icon="copy"></i>Copy</button>
           <button class="btn sm" id="dlFinal"><i data-icon="download"></i><span id="dlLbl">Download</span></button>
         </div>
-        <div class="dscroll" id="dscroll"><div class="doc" id="doc"></div></div>
+        <div class="dscroll" id="dscroll" tabindex="0" role="region" aria-label="Compared text"><div class="doc" id="doc"></div></div>
         <div class="minimap" id="minimap" aria-hidden="true"></div>
       </div>
       <div class="sheet-scrim" id="sheetScrim"></div>
@@ -644,8 +655,8 @@ input[type=range]{accent-color:var(--accent);width:150px}
         <div class="pbody" id="pChanges" role="tabpanel" aria-labelledby="tabChanges"><div class="filters" id="filters"></div><div class="clist" id="clist"></div></div>
         <div class="pbody" id="pInsights" role="tabpanel" aria-labelledby="tabInsights" hidden></div>
         <div class="pfoot">
-          <button class="btn sm" id="accAll" title="Accept every change currently shown (Shift+A)"><i data-icon="check"></i>Accept shown</button>
-          <button class="btn sm" id="rejAll" title="Reject every change currently shown (Shift+R)"><i data-icon="x"></i>Reject shown</button>
+          <button class="btn sm" id="accAll" title="Accept every change currently shown" data-key="Shift+A"><i data-icon="check"></i>Accept shown</button>
+          <button class="btn sm" id="rejAll" title="Reject every change currently shown" data-key="Shift+R"><i data-icon="x"></i>Reject shown</button>
           <button class="icon-btn" id="exportBtn" data-export title="Copy, download and export" aria-label="Copy, download and export" aria-haspopup="menu" aria-expanded="false"><i data-icon="download"></i></button>
         </div>
       </aside>
@@ -699,7 +710,7 @@ const CATS = {
   style:    { tier: 'mech', label: 'Style', desc: 'Contractions, hyphenation, number formatting.' },
   format:   { tier: 'mech', label: 'Formatting', desc: 'Markdown and HTML formatting: bold, italics, headings, list markers, code, tags. Renumbered clauses, lists and footnotes, and the page numbers of a contents page.' },
   typo:     { tier: 'mech', label: 'Typography', desc: 'Curly vs straight quotes, dashes, ellipses, special spaces.' },
-  space:    { tier: 'mech', label: 'Spacing', desc: 'Extra spaces, tabs, blank lines, line wrapping and line endings.' },
+  space:    { tier: 'mech', label: 'Spacing', desc: 'Extra spaces, tabs, blank lines and line wrapping.' },
   para:     { tier: 'mech', label: 'Paragraphs', desc: 'Paragraphs split or merged.' },
 };
 const TIERS = {
@@ -736,6 +747,8 @@ function dateWord(k) {
   for (const w of DATE_WORDS) if (Math.abs(w.length - k.length) <= 1 && osa(k, w) <= 1) return w;
   return null;
 }
+// the day a word names, also in the plural: "on Fridays" (only a day: "Mars" is no plural of "Mar")
+const dayOf = k => DAYS.has(k) ? k : k.endsWith('s') && DAYS.has(k.slice(0, -1)) ? k.slice(0, -1) : '';
 const CURRENCY = S('$ € £ ¥ ₹ ₩ ¢ ₽ ₺ ₪ ₫ ₦ ₱ ฿ ₴ ₿');
 const SIGNS = S('- + − – ±');
 // currency codes are the only units written in front of their number ("USD 5"), and then in capitals
@@ -797,7 +810,7 @@ const ANT = new Set();
  'friend enemy|ally enemy|optimistic pessimistic|overestimate underestimate|overrated underrated|surplus deficit|credit debit|' +
  'asset liability|upper lower|inflow outflow|keep discard|keep remove|show hide|visible hidden|online offline|mandatory optional|' +
  'required optional|able unable|accelerate decelerate|boost cut|win loss|agree disagree|legal illegal|valid invalid|possible impossible|' +
- 'likely unlikely|certain uncertain|clear unclear|known unknown|necessary unnecessary|able unable|appear disappear|approve disapprove|' +
+ 'likely unlikely|certain uncertain|clear unclear|known unknown|necessary unnecessary|appear disappear|approve disapprove|' +
  'conservative liberal|consistent inconsistent|complete incomplete|sufficient insufficient|adequate inadequate|direct indirect')
   .split('|').forEach(g => { const [x, y] = g.split(' '); ANT.add(lemma(x) + '|' + lemma(y)); ANT.add(lemma(y) + '|' + lemma(x)); });
 
@@ -847,16 +860,26 @@ function undouble(s) { const n = s.length; return n > 2 && s[n - 1] === s[n - 2]
 function lemma(w) { return IRR[w] || stem(w); }
 
 /* ---------- tokenizer ---------- */
+// an emoji, whole: a flag, a keycap, or pictures joined into one (a family), each picture with at most one mark that
+// asks for it in colour or in plain text and one skin tone (a run of such marks after it is invisible, and can carry
+// hidden data, so the rest stay hidden characters). The flags of England, Scotland and Wales are a black flag followed by
+// invisible "tag" letters (gbeng, gbsct, gbwls); any other run of tag letters stays a row of hidden characters, since
+// it can spell words nobody sees.
+const EMOJI = String.raw`\p{RI}\p{RI}|[#*0-9]\uFE0F?\u20E3|\u{1F3F4}\u{E0067}\u{E0062}(?:\u{E0065}\u{E006E}\u{E0067}|\u{E0073}\u{E0063}\u{E0074}|\u{E0077}\u{E006C}\u{E0073})\u{E007F}|\p{Extended_Pictographic}[\uFE0E\uFE0F]?\p{EMod}?(?:\u200D\p{Extended_Pictographic}[\uFE0E\uFE0F]?\p{EMod}?)*`;
 // Every alternative is linear: bounded quantifiers mean a run of "+" or "." can't make the email or URL pattern rescan the text.
 // groups: 1 URL, 2 email, 3 emoji (whole ZWJ / skin-tone / flag sequences), 4 number, 5 word, 6 whitespace, 7 anything else
 // (a degree sign with its C or F is a word, the unit of the figure before it: "4 °C" → "4 °F" is a changed amount)
-const RE_MAIN = new RegExp(String.raw`(https?:\/\/[^\s<>"“”‘’()\[\]{}]{0,2047}[^\s<>"“”‘’()\[\]{}.,;:!?'])|([\w][\w.+-]{0,63}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8})|(\p{RI}\p{RI}|[#*0-9]\uFE0F?⃣|\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{EMod})*)*)|(\p{N}+(?:(?:[${INWORD}]+[.,:]?[${INWORD}]*|[.,:][${INWORD}]*|[\u2009\u202F\u00A0](?=\p{N}{3}(?!\p{N})))\p{N}+)*\p{L}*)|(°[CF](?![\p{L}\p{M}\p{N}])|[\p{L}\p{M}\p{N}]+(?:(?:[${INWORD}]+['’‘\-‐‑.·]?[${INWORD}]*|['’‘\-‐‑.·][${INWORD}]*)[\p{L}\p{M}\p{N}]+)*)|([^\S\uFEFF]+)|(\.{2,}|[\-‐-―]{2,}|[!?]{2,}|_{2,}|\*{2,}|={2,}|~{2,}|[\s\S])`, 'uy');
+const RE_MAIN = new RegExp(String.raw`(https?:\/\/[^\s<>"“”‘’()\[\]{}]{0,2047}[^\s<>"“”‘’()\[\]{}.,;:!?'])|([\w][\w.+-]{0,63}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8})|(${EMOJI})|(\p{N}+(?:(?:[${INWORD}]+[.,:]?[${INWORD}]*|[.,:][${INWORD}]*|[\u2009\u202F\u00A0](?=\p{N}{3}(?!\p{N})))\p{N}+)*\p{L}*)|(°[CF](?![\p{L}\p{M}\p{N}])|[\p{L}\p{M}\p{N}]+(?:(?:[${INWORD}]+['’‘\-‐‑.·]?[${INWORD}]*|['’‘\-‐‑.·][${INWORD}]*)[\p{L}\p{M}\p{N}]+)*)|([^\S\uFEFF]+)|(\.{2,}|[\-‐-―]{2,}|[!?]{2,}|_{2,}|\*{2,}|={2,}|~{2,}|[\s\S])`, 'uy');
 const RE_NOSPACE = /[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Thai}\p{sc=Lao}\p{sc=Khmer}\p{sc=Myanmar}]/u;
 const SEG = (typeof Intl !== 'undefined' && Intl.Segmenter) ? new Intl.Segmenter(undefined, { granularity: 'word' }) : null;
 const splitNoSpace = t => SEG ? Array.from(SEG.segment(t), s => s.segment) : Array.from(t);
-const RE_EMOJI = /\p{Extended_Pictographic}|\p{RI}/u;
+const RE_EMOJI = new RegExp(EMOJI, 'u');
+// An emoji's own joiners and colour marks are part of it, not hidden characters (a family is three pictures joined by
+// two zero-width joiners). RE_HIDDEN_G finds the hidden characters of a text, passing over each emoji whole (group 1).
+const RE_HIDDEN_G = new RegExp('(' + EMOJI + ')|' + RE_INVIS.source, 'gu');
+const hiddenIn = s => { const out = []; if (RE_INVIS.test(s)) for (const m of s.matchAll(RE_HIDDEN_G)) if (!m[1]) out.push(m[0]); return out; };
 // ©, ® and ™ are picture characters to Unicode. In a text they are signs like any other: no emoji, and nothing to do with tone.
-const RE_SIGN = /^[\u00A9\u00AE\u2122]\uFE0F?$/, isEmoji = s => RE_EMOJI.test(s) && !RE_SIGN.test(s) && !tickOf(s); // (nor is a tick or a ticked box: see yesNo)
+const RE_SIGN = /^[\u00A9\u00AE\u2122][\uFE0E\uFE0F]?$/, isEmoji = s => RE_EMOJI.test(s) && !RE_SIGN.test(s) && !tickOf(s); // (nor is a tick or a ticked box: see yesNo)
 // a word written in CAPITALS: emphasis ("WITHOUT ANY WARRANTY"), or an acronym
 const shout = t => t.t.length > 1 && t.t === t.t.toUpperCase();
 
@@ -980,7 +1003,7 @@ function tokenizePara(s, md) {
     const m = RE_MAIN.exec(s);
     const t = m[0]; i += t.length;
     if (m[6] !== undefined) { pre += t; if (t.indexOf('\n') >= 0) lineStart = true; continue; }
-    lineStart = false;
+    if (!(m[7] !== undefined && RE_INVIS.test(t))) lineStart = false; // (a hidden character, such as a byte-order mark, starts nothing)
     if (m[7] !== undefined || m[3] !== undefined) push(t, K_P);
     else if (m[4] !== undefined) push(t, K_N);
     else if (m[5] !== undefined && RE_NOSPACE.test(t)) {
@@ -1049,6 +1072,8 @@ function splitParas(text, mode, md) {
   const lines = []; // [start, end, endsWithParagraphSeparator]
   for (let pos = 0; ;) {
     let nl = text.indexOf('\n', pos), hard = false;
+    // a line separator (U+2028, in text copied from Word or a PDF) ends a line as a line break does
+    const ls = text.indexOf('\u2028', pos); if (ls >= 0 && (nl < 0 || ls < nl)) nl = ls;
     const ps = text.indexOf('\u2029', pos);
     if (ps >= 0 && (nl < 0 || ps < nl)) { nl = ps; hard = true; }
     if (nl < 0) nl = text.length;
@@ -1150,16 +1175,20 @@ const endsLabel = tk => tk.t === ':' || (tk.pre !== '' && /^[—–-]$/.test(tk.
 // with a capital? "Mary Jones met John Smith." and "Signed for the Society by Priya Raman." are sentences. (A web
 // address is written in small letters wherever it stands.)
 function titleCase(toks, a, b, min) {
-  let words = 0, caps = 0;
+  let words = 0, caps = 0, first = null;
   for (let i = a; i < b; i++) {
     const tk = toks[i]; if (tk.kind !== K_W) continue;
-    words++;
+    // A line that opens with a past participle and "by" says who did something, and names them: "Signed by Philip",
+    // "Owned by Jon", "Written by Mary Jones". (A heading may hold a "by" too: "Termination by Notice".)
+    if (++words === 2 && tk.k === 'by' && (/..ed$/.test(bare(first.k)) || IRR_PP.has(bare(first.k)))) return false;
+    if (words === 1) first = tk;
     if (/^\p{Lu}/u.test(tk.t)) caps++; else if (!SMALL.has(tk.k) && !isLinkTok(tk)) return false;
   }
   return words >= min && caps / words > 0.6;
 }
 // Where every word has a capital, a capital says nothing: in a heading in Title Case ("Remote Network Interaction and
-// Use") the first word is no name because of the word after it (head), and the others are none for their capitals.
+// Use") every word is marked (head). The first is no name because of the word after it, the others are none for their
+// capitals, and in German, where a capital marks every noun, none of them is a name beside the others either.
 // What a label introduces is read by itself, and there the capitals are the writer's own: "Landlord: John Smith"
 // names someone (val). The label is read with its whole sentence: "The Work or the Software: the work…" is no heading.
 // The cells of a table row, set apart by "|", are read one by one, each like a line of its own.
@@ -1182,7 +1211,7 @@ function markPart(toks, s0, s1) {
     }
     const up = capWord(tk) && !/\p{N}/u.test(tk.t);
     tk.init = open;
-    if (title) { if (part) tk.val = up; else if (open) tk.head = true; }
+    if (title) { if (part) tk.val = up; else tk.head = true; }
     tk.cap = !open && !title && up;
     open = false;
   }
@@ -1211,7 +1240,8 @@ function labelVals(t) {
   return out;
 }
 function leadLabel(toks) {
-  let f = 0; while (f < 3 && f < toks.length && toks[f].kind === K_M && !/^ol:/.test(toks[f].k)) f++; // after "##", ">", "**"
+  // (after "##", ">", "**", or a hidden character such as a pasted byte-order mark)
+  let f = 0; while (f < 3 && f < toks.length && ((toks[f].kind === K_M && !/^ol:/.test(toks[f].k)) || isInvis(toks[f]))) f++;
   const t = toks[f], n1 = toks[f + 1], n2 = toks[f + 2]; if (!t) return null;
   if (t.kind === K_M) return /^ol:/.test(t.k) ? { at: f, end: f + 1, fam: 'ol', vals: [[Number(t.k.slice(3))]], sure: true } : null; // a Markdown list number
   const tight = x => !!x && x.pre === '', mark = (x, c) => tight(x) && x.kind === K_P && x.t === c;
@@ -1240,11 +1270,6 @@ function nextLabel(p, q) {
 
 function parseDoc(text, opt) {
   text = String(text || '');
-  // line endings and a byte-order mark are remembered, so the Final text can keep them
-  const crlf = (text.match(/\r\n/g) || []).length, lf = (text.match(/\n/g) || []).length - crlf, cr = (text.match(/\r(?!\n)/g) || []).length;
-  const eol = crlf > lf && crlf >= cr ? 'crlf' : cr > lf ? 'cr' : 'lf';
-  const bom = text.charCodeAt(0) === 0xFEFF;
-  text = (bom ? text.slice(1) : text).replace(/\r\n?/g, '\n');
   const md = !!opt.markdown;
   const sp = splitParas(text, opt.paraMode || 'auto', md);
   const toks = [], units = [], paras = [], labs = [], pages = [], seen = new Map();
@@ -1320,7 +1345,7 @@ function parseDoc(text, opt) {
     if (!nw) for (let t = u.t0; t < u.t1; t++) bag.set(toks[t].k, (bag.get(toks[t].k) || 0) + 1);
     u.key = keys.join('\u0001'); u.wk = wk.join('\u0001'); u.bag = bag; u.nw = nw; // wk: the words alone, without markup or punctuation
   }
-  return { text, toks, units, paras, lead: lead === null ? text.slice(0, sepStart) : lead, mode: sp.mode, eol, bom };
+  return { text, toks, units, paras, lead: lead === null ? text.slice(0, sepStart) : lead, mode: sp.mode };
 }
 
 function computeIdf(A, B) {
@@ -1811,9 +1836,11 @@ function contracted(a, b) {
   const x = expand([a]), y = expand([b]);
   return (x.length > 1 || y.length > 1) && x.length === y.length && x.every((w, i) => w === y[i] || sameLemma(w, y[i]));
 }
+// (a contraction is two words, so it is no other form of one: "It's" → "It is" is one change, not "It's" → "It" and an
+// added "is", which, decided apart, could leave "It's is")
 function respelt(a, b) {
   if (a === b || a.length > 64 || b.length > 64) return false;
-  return usify(a) === usify(b) || contracted(a, b) || (!!CONFUSABLE[a] && CONFUSABLE[a].includes(b)) || sameLemma(a, b) || (isTypo(a, b) && typoEvidence(a, b));
+  return usify(a) === usify(b) || contracted(a, b) || (!!CONFUSABLE[a] && CONFUSABLE[a].includes(b)) || (sameLemma(a, b) && expand([a]).length === 1 && expand([b]).length === 1) || (isTypo(a, b) && typoEvidence(a, b));
 }
 function cleanupRuns(runs, A, B) {
   const len = (list, D) => { let s = 0; for (const t of list) s += tokLen(D.toks[t]); return s; };
@@ -2005,6 +2032,8 @@ function partOfNum(D, i) {
   if (SIGNS.has(t.t)) return isNumTok(next) && next.pre.length <= 1 && (t.first || /\s/.test(t.pre) || (prev && prev.kind === K_P));
   return false;
 }
+// does every word of the list belong to a figure?
+const onlyFigures = (D, idx) => idx.every(i => !isWord(D.toks[i]) || partOfNum(D, i));
 // numeric phrases a change touches, widened to the whole phrase: "one hundred", "5 mg", "−5", "€100", "03/04/2024"
 function numPhrases(D, idx) {
   const out = [], seen = new Set(), T = D.toks;
@@ -2038,13 +2067,12 @@ function numPhrases(D, idx) {
       else if (t.kind === K_W) { const u = UNIT_ALIAS[k] || k; if (/^[$€¥¢£₹]$/.test(u)) cur += u; else units.push(u); }
     }
     flush();
-    // number words that are no figure where they stand: "one of them", "you first think", "a third party"
-    if (nums.length === 1 && !cur && !units.length && !sign) {
-      const low = text.toLowerCase();
-      if (low === 'one' || low === 'first' || /^third-part(?:y|ies)$/.test(low) || (low === 'third' && /^part(?:y|ies)$/.test(bare((T[e + 1] || {}).k || '')))) continue;
-    }
+    // Number words that may be no figure where they stand: "one of them", "you first think", "a third party". They are
+    // weak: a figure only where the other side of the change has one, as in "first" → "second" (see figurePair).
+    const low = text.toLowerCase(), weak = nums.length === 1 && !cur && !units.length && !sign &&
+      (low === 'one' || low === 'first' || /^third-part(?:y|ies)$/.test(low) || (low === 'third' && /^part(?:y|ies)$/.test(bare((T[e + 1] || {}).k || ''))));
     // at: where the phrase starts; atoms: its parts one after another, however they were grouped
-    out.push({ key: sign + cur + nums.join('|') + (units.length ? ' ' + units.join(' ') : ''), text, at: s, atoms: [sign, cur].concat(nums, units).filter(Boolean).join(' ') });
+    out.push({ key: sign + cur + nums.join('|') + (units.length ? ' ' + units.join(' ') : ''), text, at: s, atoms: [sign, cur].concat(nums, units).filter(Boolean).join(' '), weak });
   }
   return out;
 }
@@ -2088,6 +2116,7 @@ function datesOf(D, idx, other) {
     // each part of a joined word is looked at: "August-October" names two months
     const ks = wordOnly(t), parts = t.t.split('-');
     ks.forEach((k, p) => {
+      k = dayOf(k) || k; // ("Fridays" → "Thursdays")
       const txt = parts.length === ks.length ? parts[p] : t.t;
       if (!isDateWord(k)) { const w = other && dateWord(k); if (!w || !other.has(w)) return; k = w; }
       const day = DAYS.has(k) ? k : DAY_ABBR[k] && /^\p{Lu}/u.test(txt) && (ks.some((w, q) => q !== p && isDateWord(w)) || nearDate(D, t)) ? DAY_ABBR[k] : '';
@@ -2125,10 +2154,12 @@ function isTypo(a, b) {
   return d <= (mx <= 6 ? 1 : mx <= 10 ? 2 : 3);
 }
 // A one-letter difference between two real words (house → horse) changes the meaning. Without a dictionary, Diffy only
-// calls it a spelling fix when there's evidence: a well-known misspelling, an ie/ei swap, or a doubled letter.
-function typoEvidence(a, b) {
+// calls it a spelling fix when there's evidence: a well-known misspelling, an ie/ei swap, or a doubled letter. Names are
+// spelled every way (Philip and Phillip, Neil and Niel): for a name, only a well-known misspelling is evidence.
+function typoEvidence(a, b, name) {
   if (MISSPELT.has(a) || MISSPELT.has(b)) return true;
   const day = dateWord(a); if (day && day === dateWord(b)) return true; // a day or month, misspelt on one side
+  if (name) return false;
   if (a.length === b.length) {
     let i = 0; while (i < a.length && a[i] === b[i]) i++;
     const x = a.slice(i, i + 2), y = b.slice(i, i + 2);
@@ -2152,6 +2183,8 @@ const UKUS = [
   [/(oesoph|oestr|foet|diarrhoe|homoeo|amoeb|coeliac|oedem|manoeuvr|apnoe|dyspnoe|oenolog)/, m => m.replace('oe', 'e')],
 ];
 const UKUS_W = dict({ grey: 'gray', tyre: 'tire', cheque: 'check', plough: 'plow', sceptic: 'skeptic', sceptical: 'skeptical', aluminium: 'aluminum', whilst: 'while', amongst: 'among', learnt: 'learned', spelt: 'spelled', dreamt: 'dreamed', burnt: 'burned', mum: 'mom', jewellery: 'jewelry', storey: 'story', kerb: 'curb', pyjamas: 'pajamas', draught: 'draft', mould: 'mold', smoulder: 'smolder', manoeuvre: 'maneuver', ageing: 'aging', enrol: 'enroll', fulfil: 'fulfill', skilful: 'skillful', wilful: 'willful', instalment: 'installment', towards: 'toward', afterwards: 'afterward', practise: 'practice', programme: 'program', catalogue: 'catalog', dialogue: 'dialog', analogue: 'analog' });
+// German spells "Straße" as "Strasse" in Switzerland, and wherever ß can't be typed: one word, two spellings
+const ess = w => w.replace(/ß/g, 'ss');
 function usify(w) { if (UKUS_W[w]) return UKUS_W[w]; let s = w; for (const [re, r] of UKUS) s = s.replace(re, r); return s; }
 
 /* ---------- classification ---------- */
@@ -2176,11 +2209,54 @@ function findReversal(rem, add) {
   }
   return null;
 }
+// A capitalised word after "the", "this" or "each" is a term a contract defines ("the Tenant", "this Agreement"): it has
+// one spelling, unlike a person's name, so a letter put right in it is a spelling fix (see typoEvidence).
+const DEFINED = S('the this these those each any every such');
+// the parties of a contract, a case or a letter, named by their part in it (see classifyTok: a change of word order)
+const ROLE = S('employer employee landlord tenant lessor lessee licensor licensee buyer seller vendor purchaser supplier customer client ' +
+  'contractor subcontractor borrower lender debtor creditor mortgagor mortgagee grantor grantee assignor assignee guarantor beneficiary ' +
+  'trustee plaintiff defendant claimant respondent appellant applicant petitioner witness victim prosecutor parent child husband wife ' +
+  'owner occupier agent principal insurer insured provider recipient sender receiver donor manufacturer distributor franchisor franchisee party');
+const isRole = t => { if (t.kind !== K_W) return false; const k = bare(t.k); return ROLE.has(k) || ROLE.has(k.replace(/s$/, '')) || ROLE.has(k.replace(/es$/, '')) || k === 'parties' || k === 'children'; };
+// German writes every noun with a capital (see isName). Its small words open a sentence with a capital and name no one:
+// the articles and words like them, the prepositions, and the polite "Sie" and "Ihre", which have a capital wherever
+// they stand ("Diese Wohnung", "Bei Kündigung", "Haben Sie Fragen?", "Ihre Zahlung").
+const DE_FUNC = S('der die das den dem des ein eine einen einem einer eines kein keine keinen keinem keiner keines ' +
+  'dieser diese dieses diesen diesem jeder jede jedes jeden jedem jener jene jenes welcher welche welches welchen welchem ' +
+  'mein meine meinen meinem meiner dein deine deinen deinem deiner sein seine seinen seinem seiner unser unsere unseren unserem unserer ' +
+  'euer eure euren eurem eurer sie ihnen ihr ihre ihren ihrem ihrer ihres alle allen aller beide beiden viele vielen einige einigen ' +
+  'und oder aber denn sondern wenn weil dass als wie im am ans zum zur vom beim ins auf aus bei mit nach seit von zu für gegen ohne um ' +
+  'durch über unter vor hinter neben zwischen bis ab laut gemäß wegen während trotz innerhalb außerhalb');
+// Is a text German? Its commonest words that are German alone tell. The articles count beside them, or where the text
+// has both "der" and "die" and most of each have a capital word after them, the way German writes its nouns: "der",
+// "die", "das", "den", "dem" and "des" are words of Dutch, Danish, Afrikaans, French or Portuguese too ("die
+// overeenkomst", "des avocats"). A French or Portuguese contract may write "des Parties" or "das Partes", an Afrikaans
+// one "die Huurder", and a Dutch name holds a "der" ("Van der Berg"). ("ich" is no such word: it is Polish and Slovak too.)
+const DE_ONLY = S('und ist nicht für auf sich auch wird oder bei nach zu zum zur eine einen einem einer wir dass'), DE_ART = S('der die das den dem des');
+const ENGLISH = S('the and of to is in that it for with on as are be this by or not');
+function definedTerm(D, t) {
+  for (let i = t.i - 1; i >= 0 && i >= t.i - 3; i--) {
+    const p = D.toks[i];
+    if (p.kind === K_W) return DEFINED.has(bare(p.k)) && !capNext(D, t); // ("the Philip Carter Trust" names someone)
+    if (p.kind !== K_P && p.kind !== K_M) return false; // (a quote or a bold mark may stand between: the “Tenant”)
+  }
+  return false;
+}
 const nameLike = k => k.length > 1 && !FUNC.has(k) && !NEG.has(k) && !MODAL.has(k) && !SCOPE.has(k) && !TONE.has(k) && !CUR.lower.has(k);
 function isName(D, t, loose) {
   if (t.kind !== K_W || !/^\p{Lu}/u.test(t.t) || /\p{N}/u.test(t.t)) return false;
   const k = bare(t.k);
-  if (MONTHS.has(k) || DAYS.has(k)) return false;
+  if (MONTHS.has(k) || dayOf(k)) return false; // ("on Saturdays")
+  // a unit or a currency that goes with a figure is part of the figure: "9 PM", "5 GB", "USD 500"
+  if (!isNumTok(t) && partOfNum(D, t.i)) return false;
+  // German writes every noun with a capital ("die Heizung"): there a capital alone makes no name. It takes a capital
+  // word beside it ("Anna Schmidt", "Herr Müller"), and not a small word at a sentence start ("Der Vertrag", "Diese
+  // Wohnung") or a unit ("5 GB Speicher"). Nor does a capital count in a word in CAPITALS ("Der Vertrag WIRD
+  // gekündigt") or in a heading or label in Title Case ("Monatliche Miete: 500 Euro"), where every word has one.
+  if (CUR.nouns) {
+    const own = x => !!x && capWord(x) && !shout(x) && !x.head && !DE_FUNC.has(bare(x.k)) && !FUNC.has(bare(x.k)) && !partOfNum(D, x.i), nx = D.toks[t.i + 1];
+    return own(t) && ((joined(nx) && own(nx)) || (joined(t) && own(D.toks[t.i - 1])));
+  }
   // A word in CAPITALS that the texts also write in small letters is emphasis ("WITHOUT ANY WARRANTY"), not a name.
   // An acronym (GNU, NATO) never appears in small letters and stays one.
   if (shout(t) && CUR.lower.has(k)) return false;
@@ -2194,10 +2270,10 @@ function isName(D, t, loose) {
 // (In a heading set in Title Case every word is followed by a capital, so there the next word is no support: t.head.)
 // ("I" is no such word: "Should I sign?" opens with no name)
 function capNext(D, t) { const nx = D.toks[t.i + 1]; return !!nx && capWord(nx) && joined(nx); }
-const isInvis = t => t.kind === K_P && (RE_INVIS.test(t.t) || RE_BIDI.test(t.t));
+const isInvis = t => t.kind === K_P && (hiddenIn(t.t).length > 0 || RE_BIDI.test(t.t));
 // What a change did to hidden characters (on their own, or inside a word), or null when it left them as they were.
 function hiddenNote(ta, tb) {
-  const hidden = l => { const out = []; for (const t of l) for (const c of t.t) if (RE_INVIS.test(c) || RE_BIDI.test(c)) out.push(c); return out; };
+  const hidden = l => { const out = []; for (const t of l) { for (const c of hiddenIn(t.t)) out.push(c); for (const c of t.t) if (RE_BIDI.test(c)) out.push(c); } return out; };
   const ha = hidden(ta), hb = hidden(tb);
   if (msEq(ha, hb)) return null;
   const d = msDiff(ha, hb), list = l => [...new Set(l)].map(c => cpName(c) ? cpName(c) + ' (' + cpCode(c) + ')' : cpCode(c)).join(', ');
@@ -2217,7 +2293,7 @@ function linkTargets(toks) {
 // the text says. A plus or minus set against a capital letter or two is the same kind of mark: a grade or a blood
 // group ("B−" → "B+").
 const TICKS = S('☐ ☑ ☒ ✓ ✔ ✗ ✘ ✅ ❌ ❎'), COMPARE = S('< > ≤ ≥ = ≠ ≈');
-const tickOf = s => { s = s.replace(/\uFE0F/g, ''); return TICKS.has(s) ? s : ''; };
+const tickOf = s => { s = s.replace(/[\uFE0E\uFE0F]/g, ''); return TICKS.has(s) ? s : ''; };
 function yesNo(D, toks) {
   const out = [];
   for (const t of toks) {
@@ -2233,6 +2309,17 @@ function addFlag(h, f, info) {
   if (h.flags.includes(f)) return;
   h.finfo.push([f, info]); h.finfo.sort((p, q) => FLAG_ORDER.indexOf(p[0]) - FLAG_ORDER.indexOf(q[0]));
   h.flags = h.finfo.map(x => x[0]);
+}
+// The figures a change touches on each side, read as whole phrases (nearA/nearB: the unchanged tokens around it). A
+// weak number word, "one" or "first", is a figure where a figure is put in its place ("first" → "second"), but not the
+// "third" of "third parties" in a passage rewritten with section numbers in it.
+function figurePair(ia, ib, nearA, nearB) {
+  const { A, B } = CUR, pa = numPhrases(A, ia.concat(nearA || [])), pb = numPhrases(B, ib.concat(nearB || [])), strong = l => l.filter(p => !p.weak);
+  const xa = strong(pb).length && onlyFigures(A, ia) ? pa : strong(pa), xb = strong(pa).length && onlyFigures(B, ib) ? pb : strong(pb);
+  // A clause number is no figure. But where a figure stands in its place on the other side, the number is what it
+  // replaced: "Clause 8." → "Clause 9." in the middle of a list reads “8” → “9”, not Added “9”.
+  const lbls = (D, idx) => idx.map(i => D.toks[i]).filter(t => t && t.lbl && /\p{N}/u.test(t.t)).map(t => ({ key: canonNum(bare(t.k)), text: t.t, at: t.i, atoms: canonNum(bare(t.k)), weak: false }));
+  return [!xa.length && xb.length && onlyFigures(B, ib) ? lbls(A, ia) : xa, !xb.length && xa.length && onlyFigures(A, ia) ? lbls(B, ib) : xb];
 }
 // ia/ib: token indices of the change; nearA/nearB: the unchanged tokens around it, so numbers are read as whole phrases
 function computeFlags(h, ia, ib, nearA, nearB) {
@@ -2252,7 +2339,7 @@ function computeFlags(h, ia, ib, nearA, nearB) {
     if (r) F.push(['polarity', 'Reversed: ' + qt(r[0]) + ' → ' + qt(r[1])]);
   }
   const dA = dateNames(A, ia), dB = dateNames(B, ib);
-  const xa = numPhrases(A, ia.concat(nearA || [])), xb = numPhrases(B, ib.concat(nearB || []));
+  const [xa, xb] = figurePair(ia, ib, nearA, nearB);
   const da = datesOf(A, ia, dB), db = datesOf(B, ib, dA), dd = diffBy(da, db), dn = diffBy(xa.concat(da), xb.concat(db));
   // the same figures with other marks between them ("(555) 010-9999" → "555 010 9999") are not a changed number
   const flat = l => l.slice().sort((p, q) => p.at - q.at).map(p => p.atoms).join(' ');
@@ -2348,7 +2435,7 @@ function classifyTok(h, ia, ib, nearA, nearB) {
   // a clause or list number that changed, and nothing else: renumbering
   if (ta.length && tb.length && ta.every(t => t.lbl) && tb.every(t => t.lbl)) { h.cat = 'format'; h.sub = 'Numbering'; h.numbering = true; return; }
   // "(c)" and "©" are one sign set two ways, and so are "(R)" and "(TM)" and theirs
-  const sign = l => l.map(t => t.t).join('').replace(/\uFE0F/g, '').replace(/^\((c|r|tm)\)$/i, (m, x) => ({ c: '©', r: '®', tm: '™' })[x.toLowerCase()]);
+  const sign = l => l.map(t => t.t).join('').replace(/[\uFE0E\uFE0F]/g, '').replace(/^\((c|r|tm)\)$/i, (m, x) => ({ c: '©', r: '®', tm: '™' })[x.toLowerCase()]);
   if (ta.length && tb.length && ta.length + tb.length <= 6 && RE_SIGN.test(sign(ta)) && sign(ta) === sign(tb)) { h.cat = 'typo'; h.sub = 'Typography'; return; }
   computeFlags(h, ia, ib, nearA, nearB);
   if (h.reorder) {
@@ -2358,7 +2445,10 @@ function classifyTok(h, ia, ib, nearA, nearB) {
     const inOrder = (D, idx) => idx.slice().sort((p, q) => p - q).map(i => D.toks[i]);
     const na = inOrder(A, ia).filter(t => isName(A, t, true)).map(t => normTypo(t.t)), nb = inOrder(B, ib).filter(t => isName(B, t, true)).map(t => normTypo(t.t));
     if (na.length > 1 && !arrEq(na, nb)) addFlag(h, 'name', 'Changed places: ' + qList(na) + ' → ' + qList(nb));
-    const fa = numPhrases(A, ia).sort((p, q) => p.at - q.at), fb = numPhrases(B, ib).sort((p, q) => p.at - q.at);
+    // and so when two parties are in small letters: "the employer pays the employee" → "the employee pays the employer"
+    const ra = inOrder(A, ia).filter(isRole).map(t => t.t), rb = inOrder(B, ib).filter(isRole).map(t => t.t);
+    if (!h.flags.includes('name') && ra.length > 1 && !arrEq(ra.map(bare), rb.map(bare))) addFlag(h, 'name', 'Changed places: ' + qList(ra) + ' → ' + qList(rb));
+    const [fa, fb] = figurePair(ia, ib).map(l => l.sort((p, q) => p.at - q.at));
     if (fa.length > 1 && !arrEq(fa.map(p => p.key), fb.map(p => p.key))) addFlag(h, 'number', 'Changed places: ' + qList(fa.map(p => p.text)) + ' → ' + qList(fb.map(p => p.text)));
     // Nor when a negation now negates another word: "may not sublet … must repair" → "may sublet … must not repair".
     // (A negation that moved along with its clause still negates the same word.)
@@ -2375,9 +2465,10 @@ function classifyTok(h, ia, ib, nearA, nearB) {
   const ka = wa.map(t => t.k), kb = wb.map(t => t.k);
   // One word put right ("definately" → "definitely", "shoudl" → "should", "fourty" → "forty") is still the same word:
   // what the word lists make of its two spellings is no change of meaning.
+  const named = h.flags.includes('name') && !(wa[0] && definedTerm(A, wa[0])) && !(wb[0] && definedTerm(B, wb[0]));
   if (ka.length === 1 && kb.length === 1 && ka[0].length <= 64 && kb[0].length <= 64 && pureWord(wa[0]) && pureWord(wb[0])) {
     const a = bare(ka[0]), b = bare(kb[0]);
-    if (a !== b && (usify(a) === usify(b) || (isTypo(a, b) && typoEvidence(a, b)))) { h.finfo = h.finfo.filter(f => f[0] === 'lookalike' || f[0] === 'link'); h.flags = h.finfo.map(f => f[0]); }
+    if (a !== b && (usify(a) === usify(b) || ess(a) === ess(b) || (isTypo(a, b) && typoEvidence(a, b, named)))) { h.finfo = h.finfo.filter(f => f[0] === 'lookalike' || f[0] === 'link'); h.flags = h.finfo.map(f => f[0]); }
   }
   const hard = h.flags.some(f => f === 'polarity' || f === 'number' || f === 'modal' || f === 'link');
   const inv = ta.some(isInvis) || tb.some(isInvis);
@@ -2397,8 +2488,8 @@ function classifyTok(h, ia, ib, nearA, nearB) {
   if (ka.length || kb.length) {
     // the same amount written another way, in words or symbols on either side ("12%" → "12 percent", "1,500.00" → "1500")
     if (!h.flags.includes('number')) {
-      const xa = numPhrases(A, ia), xb = numPhrases(B, ib);
-      if (xa.length && xb.length && msEq(xa.map(p => p.key), xb.map(p => p.key)) && ia.every(i => !isWord(A.toks[i]) || partOfNum(A, i)) && ib.every(i => !isWord(B.toks[i]) || partOfNum(B, i))) { h.cat = 'style'; h.sub = 'Number format'; return; }
+      const [xa, xb] = figurePair(ia, ib);
+      if (xa.length && xb.length && msEq(xa.map(p => p.key), xb.map(p => p.key)) && onlyFigures(A, ia) && onlyFigures(B, ib)) { h.cat = 'style'; h.sub = 'Number format'; return; }
     }
     if (ka.join('').replace(/[-‐‑]/g, '') === kb.join('').replace(/[-‐‑]/g, '')) { h.cat = 'style'; h.sub = 'Hyphenation'; return; }
   }
@@ -2406,10 +2497,11 @@ function classifyTok(h, ia, ib, nearA, nearB) {
     const a = bare(ka[0]), b = bare(kb[0]);
     if (dateForms(a, b)) { h.cat = 'style'; h.sub = 'Abbreviation'; return; }
     if (usify(a) === usify(b)) { h.cat = 'spelling'; h.sub = 'UK/US spelling'; return; }
+    if (ess(a) === ess(b)) { h.cat = 'spelling'; h.sub = 'ß or ss'; return; }
     if (CONFUSABLE[a] && CONFUSABLE[a].includes(b)) { h.cat = 'spelling'; h.sub = 'Commonly confused'; return; }
-    if ((IRR[a] && IRR[a] === IRR[b]) || (stem(a) === stem(b) && inflected(a, b))) { h.cat = 'grammar'; h.sub = ARTICLES.has(a) ? 'Article' : 'Word form'; return; }
+    if (sameLemma(a, b)) { h.cat = 'grammar'; h.sub = ARTICLES.has(a) ? 'Article' : 'Word form'; return; }
     if (isTypo(a, b)) {
-      if (typoEvidence(a, b)) { h.cat = 'spelling'; h.sub = 'Spelling'; return; }
+      if (typoEvidence(a, b, named)) { h.cat = 'spelling'; h.sub = 'Spelling'; return; }
       addFlag(h, 'lookalike', qt(wa[0].t) + ' → ' + qt(wb[0].t) + ': a different word that looks almost the same');
       h.cat = 'reword'; h.sub = 'Look-alike word'; return;
     }
@@ -2627,23 +2719,18 @@ function build(A, B, items, ctx) {
     const h = mk('space', 'space'); h.wa = sa; h.wb = sb; h.a.push(e.a); h.b.push(e.b); e.ph = h.id;
   }
   if (A.lead !== B.lead) layout();
-  if (A.eol !== B.eol) mk('space', 'space').meta = 'eol';
-  if (A.bom !== B.bom) mk('space', 'typo').meta = 'bom';
   return { hunks, entries, layout: L ? L.id : null };
 }
 function wsOf(t) { return t.pre; }
 // soft line breaks (and the indentation around them) count as a plain space; everything else is compared exactly
 function wsSig(t) { return t.first ? '' : t.pre.replace(/[ \t]*[\n\u2028][ \t]*/g, ' '); }
 
-const EOL_NAME = { crlf: 'Windows (CRLF)', lf: 'Unix (LF)', cr: 'old Mac (CR)' };
 function classifyAll(A, B, hunks) {
   for (const h of hunks) {
     if (h.kind === 'mod') classifyMod(h, A.toks[h.a[0]], B.toks[h.b[0]]);
     else if (h.kind === 'tok') classifyTok(h, h.a, h.b, h.nearA, h.nearB);
     else if (h.kind === 'space') {
       if (h.layout) h.sub = 'Line breaks & blank lines';
-      else if (h.meta === 'eol') h.sub = 'Line endings: ' + EOL_NAME[A.eol] + ' → ' + EOL_NAME[B.eol];
-      else if (h.meta === 'bom') h.sub = A.bom ? 'Byte-order mark removed' : 'Byte-order mark added';
       else {
         const sp = s => s.replace(/[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g, ' ');
         if (h.wa && h.wb && sp(h.wa) === sp(h.wb)) { h.cat = 'typo'; h.sub = /[\u00A0\u202F]/.test(h.wa + h.wb) ? 'Non-breaking space' : 'Special space'; }
@@ -2804,10 +2891,11 @@ const countWords = (text, opt) => countDoc(text, opt).words;
 const now = () => (typeof performance !== 'undefined' ? performance : Date).now();
 function compare(textA, textB, opt) {
   const t0 = now();
-  opt = Object.assign({ paraMode: 'auto', markdown: true, threshold: 0.45, moves: true }, opt || {});
+  opt = Object.assign({ paraMode: 'auto', markdown: true, moves: true }, opt || {});
   const A = parseDoc(textA, opt), B = parseDoc(textB, opt);
   const idf = computeIdf(A, B);
-  const ctx = { idf, T: opt.threshold, MT: Math.max(opt.threshold, 0.5), kid: keyInterner(), approx: false };
+  // T: how alike two sentences have to be to line up as one sentence edited; MT: to be read as one sentence moved
+  const ctx = { idf, T: 0.45, MT: 0.5, kid: keyInterner(), approx: false };
   const same = A.text === B.text;
   const items = same ? A.units.map((u, i) => ({ k: u.kind === 'e' ? 'eof' : u.kind === 'p' ? 'pb' : 'pair', a: [i], b: [i], exact: true })) : alignUnits(A, B, ctx);
   if (!same) { reorderRuns(items); if (opt.moves) detectMoves(items, A, B, ctx); }
@@ -2817,7 +2905,18 @@ function compare(textA, textB, opt) {
   for (const D of [A, B]) for (const t of D.toks) if (t.kind === K_W) { if (/^\p{Ll}/u.test(t.t)) lower.add(bare(t.k)); else if (t.cap) caps.add(bare(t.k)); }
   const smp = (A.text.slice(0, 100000) + B.text.slice(0, 100000)).normalize('NFD');
   const letters = (smp.match(/\p{L}/gu) || []).length, marked = (smp.match(/\p{Script=Latin}[\u0300-\u036F]/gu) || []).length;
-  CUR = { A, B, lower, caps, marks: letters ? marked / letters : 0 };
+  // German or English? Their commonest words tell (German writes its nouns with a capital: see isName)
+  // (dd: how often "der" and "die" stand, and how often a capital word follows each)
+  let de = 0, art = 0, en = 0;
+  const dd = { der: [0, 0], die: [0, 0] }, nounsAfter = c => c[0] > 0 && c[1] > 0.6 * c[0];
+  for (const D of [A, B]) for (let i = 0; i < D.toks.length && i < 50000; i++) {
+    const t = D.toks[i]; if (t.kind !== K_W) continue;
+    const k = bare(t.k);
+    if (DE_ONLY.has(k)) de++;
+    else if (DE_ART.has(k)) { art++; const c = dd[k]; if (c) { c[0]++; if (capWord(D.toks[i + 1])) c[1]++; } }
+    else if (ENGLISH.has(k)) en++;
+  }
+  CUR = { A, B, lower, caps, marks: letters ? marked / letters : 0, nouns: de + art >= 3 && de + art > 2 * en && (de > 0 || (nounsAfter(dd.der) && nounsAfter(dd.die))) };
   let built;
   try { built = build(A, B, items, ctx); classifyAll(A, B, built.hunks); } finally { CUR = null; }
   const { hunks, entries, layout } = built;
@@ -2834,7 +2933,7 @@ function compare(textA, textB, opt) {
   // moved text starts where it is drawn, at the new place, also when the old place comes first)
   const firstAt = (id, x) => { if (id != null && hunks[id].first < 0) hunks[id].first = x; };
   entries.forEach((e, x) => { firstAt(e.mv === 'src' && e.h !== e.m ? null : e.h, x); firstAt(e.ph, x); firstAt(e.m, x); });
-  for (const h of hunks) if (h.first < 0 && h.kind === 'space') h.first = entries.length; // document-wide: line endings, leading blank lines
+  for (const h of hunks) if (h.first < 0 && h.kind === 'space') h.first = entries.length; // document-wide: the blank lines a text opens with
   const order = hunks.filter(h => h.first >= 0).sort((p, q) => p.first - q.first || p.id - q.id).map(h => h.id);
   order.forEach((id, i) => { hunks[id].ord = i; });
   A.ent = new Int32Array(A.toks.length).fill(-1); B.ent = new Int32Array(B.toks.length).fill(-1);
@@ -2854,10 +2953,8 @@ function compare(textA, textB, opt) {
     else if (e.k === '-') { if (e.mv !== 'dst' && isWord(A.toks[e.a])) removed++; }
     else if (e.mv !== 'src' && isWord(B.toks[e.b])) added++;
   }
-  for (const h of hunks) h.sig = h.cat + '\u0001' + h.a.map(t => A.toks[t].k).join(' ') + '\u0001' + h.b.map(t => B.toks[t].k).join(' ');
-  const meta = k => { const h = hunks.find(x => x.meta === k); return h ? h.id : null; };
   return {
-    A, B, items, entries, hunks, order, rows: computeRows(items, A, B), opt, layout, eolHunk: meta('eol'), bomHunk: meta('bom'),
+    A, B, items, entries, hunks, order, rows: computeRows(items, A, B), opt, layout,
     critic: RE_CRITIC.test(A.text) || RE_CRITIC.test(B.text),
     stats: { wordsA: wA, wordsB: wB, match, added, removed, similarity: cA + cB ? 2 * match / (cA + cB) : 1, ms: now() - t0, approx: ctx.approx },
   };
@@ -2912,21 +3009,14 @@ function reader(M, isNew, fmtNew) {
     return [w, s];
   };
 }
-// The blank lines a text opens with, its line endings and its byte-order mark: each from the draft that its change, or
-// fmtNew where the drafts agree, picks.
-function framed(M, isNew, fmtNew, body) {
-  const pick = (id, k) => (id != null ? isNew(M.hunks[id]) : fmtNew) ? M.B[k] : M.A[k];
-  let out = pick(M.layout, 'lead') + body;
-  const eol = pick(M.eolHunk, 'eol');
-  if (eol === 'crlf') out = out.replace(/\n/g, '\r\n'); else if (eol === 'cr') out = out.replace(/\n/g, '\r');
-  return (pick(M.bomHunk, 'bom') ? '\uFEFF' : '') + out;
-}
+// The blank lines a text opens with: from the draft that their change, or fmtNew where the drafts agree, picks.
+const leadOf = (M, isNew, fmtNew) => ((M.layout != null ? isNew(M.hunks[M.layout]) : fmtNew) ? M.B : M.A).lead;
 function merge(M, isNew, fmtNew) {
   if (fmtNew === undefined) fmtNew = true;
   const read = reader(M, isNew, fmtNew);
   let out = '';
   for (const e of M.entries) { const p = read(e); if (p) out += p[0] + p[1]; }
-  return framed(M, isNew, fmtNew, out);
+  return leadOf(M, isNew, fmtNew) + out;
 }
 
 /* ---------- CriticMarkup export ---------- */
@@ -2938,7 +3028,7 @@ function merge(M, isNew, fmtNew) {
 // at each of its two places, its open edits refused at the old place and taken at the new one.
 function critic(M, decision) {
   const { hunks } = M, d = h => decision ? decision(h) : null;
-  const open = h => !d(h) && !h.layout && !h.meta, base = h => d(h) ? d(h) === 'acc' : true;
+  const open = h => !d(h) && !h.layout, base = h => d(h) ? d(h) === 'acc' : true;
   const taken = reader(M, base, true), refused = reader(M, h => !open(h) && base(h), true);
   const flags = H => H.finfo.map(f => CATS[f[0]].label + ': ' + f[1]);
   let out = '', g = null; // g: the suggestion being written. r, t: what stands there refused and taken; key: whose it is
@@ -2967,18 +3057,18 @@ function critic(M, decision) {
     if (pt) g.t += pt[0] + pt[1];
   }
   end();
-  return framed(M, base, true, out);
+  return leadOf(M, base, true) + out;
 }
 
 /* ---------- HTML renderers (pure string builders) ---------- */
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = s => String(s).replace(/[&<>"']/g, c => ESC[c]);
 const CTL_ABBR = { '\u202A': 'LRE', '\u202B': 'RLE', '\u202C': 'PDF', '\u202D': 'LRO', '\u202E': 'RLO', '\u2066': 'LRI', '\u2067': 'RLI', '\u2068': 'FSI', '\u2069': 'PDI', '\u200E': 'LRM', '\u200F': 'RLM', '\u061C': 'ALM', '\u200B': 'ZWSP', '\u200C': 'ZWNJ', '\u200D': 'ZWJ', '\u2060': 'WJ', '\u00AD': 'SHY', '\uFEFF': 'BOM', '\u0000': 'NUL' };
-const RE_BIDI_G = new RegExp(RE_BIDI.source, 'g'), RE_INVIS_G = new RegExp(RE_INVIS.source, 'gu');
+const RE_BIDI_G = new RegExp(RE_BIDI.source, 'g');
 const badge = c => '<span class="ctl" title="' + esc(cpName(c) || cpCode(c)) + '">' + (CTL_ABBR[c] || cpCode(c)) + '</span>';
 // text for display: escaped, with direction controls always shown as a badge (so they can't reorder what you read),
 // and inside changes, invisible characters too
-function vis(s, changed) { let h = esc(s).replace(RE_BIDI_G, badge); if (changed) h = h.replace(RE_INVIS_G, badge); return h; }
+function vis(s, changed) { let h = esc(s).replace(RE_BIDI_G, badge); if (changed) h = h.replace(RE_HIDDEN_G, (m, emoji) => emoji ? m : badge(m)); return h; }
 const tokHtml = (t, o, changed) => t.kind === K_M ? (changed || o.markup ? '<span class="mk">' + esc(t.t) + '</span>' : '') : vis(t.t, changed);
 const preHtml = t => t.first || !t.pre ? '' : ' ';
 const wsMark = s => Array.from(s, c => c === '\t' ? '⇥' : c === ' ' ? '·' : '⍽').join('');
@@ -2995,21 +3085,24 @@ function hunkClass(h, o) {
   if (h.kind === 'move') c += ' mv';
   // only deletions / only insertions: once decided the other way, such a change has no words left to show
   if (h.kind === 'tok' || h.kind === 'unit') c += !h.b.length ? ' od' : !h.a.length ? ' oi' : '';
+  if (o.hidden && o.hidden(h)) c += ' off';
   if (o.cls) c += o.cls(h);
   return c;
 }
 
 function Writer(M, o) {
-  const W = { html: '', open: -1, pc: null, pt: '', firstSeen: new Set() };
+  // off: the change being written is hidden by the filters. Its words are then plain text inside its mark, not an
+  // insertion or a deletion, so a screen reader reads it the way the eye sees it.
+  const W = { html: '', open: -1, pc: null, pt: '', firstSeen: new Set(), off: false };
   W.flush = () => {
     if (W.pt) {
-      if (W.pc) { const tag = W.pc[0] === 'd' ? 'del' : W.pc[0] === 'i' ? 'ins' : 'span'; W.html += '<' + tag + ' class="' + W.pc + '">' + W.pt + '</' + tag + '>'; }
+      if (W.pc) { const tag = W.off ? 'span' : W.pc[0] === 'd' ? 'del' : W.pc[0] === 'i' ? 'ins' : 'span'; W.html += '<' + tag + ' class="' + W.pc + '">' + W.pt + '</' + tag + '>'; }
       else W.html += W.pt;
     }
     W.pt = ''; W.pc = null;
   };
   W.piece = (cls, s) => { if (!s) return; if (cls !== W.pc) { W.flush(); W.pc = cls; } W.pt += s; };
-  W.close = () => { W.flush(); if (W.open >= 0) { W.html += '</span>'; W.open = -1; } };
+  W.close = () => { W.flush(); if (W.open >= 0) { W.html += '</span>'; W.open = -1; W.off = false; } };
   // The first mark of a change gets the class h0: its flag dot is drawn there, and the minimap and the keyboard go there.
   // end: which end of a move this is ('src' or 'dst'); a move has a first mark at each of its two ends. wrap: a mark that
   // only holds the space after a change; it carries on a mark that is open and never counts as a first one.
@@ -3020,7 +3113,7 @@ function Writer(M, o) {
     const key = id + (end || '');
     if (!wrap && !W.firstSeen.has(key)) { W.firstSeen.add(key); c += ' h0'; }
     W.html += '<span class="' + c + '" data-h="' + id + '">';
-    W.open = id; W.end = end;
+    W.open = id; W.end = end; W.off = !!(o.hidden && o.hidden(M.hunks[id]));
   };
   W.raw = s => { W.flush(); W.html += s; };
   W.take = () => { W.close(); const s = W.html; W.html = ''; return s; };
@@ -3257,6 +3350,9 @@ function contextBefore(M, h, nWords) {
     start = !!t.first;
     if (isWord(t)) cnt++;
   }
+  // (a very long word, such as a web address, is cut to its last 80 characters, not inside an accent or an emoji)
+  const cs = Array.from(s);
+  if (cs.length > 80) return '…' + cs.slice(-80).join('').replace(/^[\p{M}\p{EMod}\u200D]+/u, '');
   return s && !start && x >= 0 ? '…' + s : s;
 }
 // The stretch of text a change of word order runs over, from its first mark to its last, as each draft has it. (The
@@ -3277,7 +3373,7 @@ return {
   K: { W: K_W, N: K_N, P: K_P, PB: K_PB, EOF: K_EOF, M: K_M }, CATS, TIERS, FLAG_ORDER,
   compare, merge, critic, docStats, countWords, countDoc, charDiff, esc, vis, textOf, contextBefore, spanOf,
   renderUnified, renderSplit,
-  _t: { lcs, parseDoc, tokenizePara, splitSentences, stem, usify, isTypo, typoEvidence, canonNum, expand },
+  _t: { parseDoc }, // (for the tests)
 };
 })();
 
@@ -3289,7 +3385,7 @@ return {
 // The version is also written in the comment at the top of the file (the tests keep the two in step).
 // Diffy is made to be downloaded once and then used for months from someone's own computer, so nothing in it is a
 // clickable link and nothing in it needs the internet: an address is always plain text to copy.
-const VERSION = '1.0.6', SOURCE = 'github.com/krulsenpai/diffy';
+const VERSION = '1.0.7', SOURCE = 'github.com/krulsenpai/diffy';
 const ONLINE = /^https?:$/.test(location.protocol); // opened from a website, not from a file on this computer
 const TITLE = document.title; // the page's own title, put back whenever no comparison is on screen
 const E = Engine, CATS = E.CATS, esc = E.esc, vis = E.vis;
@@ -3315,7 +3411,6 @@ const ICONS = {
   download: '<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
   book: '<path d="M3.5 5.5h5.5a3 3 0 0 1 3 3V20a2 2 0 0 0-2-2H3.5zM20.5 5.5H15a3 3 0 0 0-3 3V20a2 2 0 0 1 2-2h6.5z"/>',
   printer: '<path d="M7 9V3.5h10V9"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/>',
-  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
   code: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/>', page: '<path d="M6 3h8l5 5v13H6z"/><path d="M9 13h7M9 17h5"/>',
 };
 const MARK = '<svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6.5" class="mk-bg"/><path class="mk-ln" d="M6.5 8h11M6.5 12h5.4M6.5 16h8"/><path class="mk-ln mk-f" d="M14.7 12h2.8"/></svg>';
@@ -3324,11 +3419,11 @@ const hydrate = (root = document) => { for (const el of $$('i[data-icon]', root)
 
 /* ---------- settings (the only thing ever persisted) ---------- */
 const LS = 'diffy.settings.v1';
-const DEF = { theme: 'system', oled: true, font: 'serif', size: 18, width: 'normal', view: 'inline', paraMode: 'auto', markdown: true, threshold: 0.45, moves: true, markup: true, warnClose: true, panel: true, filtersOpen: false, hidden: { space: true, typo: true } };
+const DEF = { theme: 'system', oled: true, font: 'serif', size: 18, width: 'normal', view: 'inline', paraMode: 'auto', markdown: true, moves: true, markup: true, keys: true, warnClose: true, panel: true, filtersOpen: false, hidden: { space: true, typo: true } };
 // "Final" and "keep the original for undecided changes" are per session: remembering them once made a new session
 // open straight onto the unchanged original, ready to copy
 const ENUMS = { theme: ['system', 'light', 'dark'], font: ['serif', 'sans', 'mono'], width: ['narrow', 'normal', 'wide'], view: ['inline', 'split'], paraMode: ['auto', 'blank', 'line'] };
-const RANGES = { size: [14, 24], threshold: [0.2, 0.8] };
+const RANGES = { size: [14, 24] };
 function loadSettings() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) { s = {}; }
@@ -3351,7 +3446,7 @@ const save = () => { try { localStorage.setItem(LS, JSON.stringify(Object.assign
 const st = {
   version: 1, M: null, dec: new Map(), undo: [], redo: [], cur: -1, vis: [], visSet: new Set(), pos: new Map(),
   screen: 'compose', names: { a: '', b: '' }, loaded: { a: '', b: '' }, modal: null, menu: null, priv: null, tab: 'changes', listLimit: 400,
-  card: { id: -1, pinned: false, anchor: null, tShow: 0, tHide: 0, rest: false }, pendNew: true, lastDoc: S.view, swapped: false,
+  card: { id: -1, pinned: false, anchor: null, tShow: 0, tHide: 0, rest: false }, pendNew: true, lastDoc: S.view,
 };
 const ta = $('#ta'), tb = $('#tb'), docEl = $('#doc'), sc = $('#dscroll'), card = $('#hcard'), clist = $('#clist'), mm = $('#minimap');
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -3378,7 +3473,15 @@ function applyType() {
   r.setProperty('--doc-size', S.size + 'px');
   r.setProperty('--measure', S.width === 'narrow' ? '58ch' : S.width === 'wide' ? '92ch' : '70ch');
 }
-const engineOpts = () => ({ paraMode: S.paraMode, markdown: S.markdown, threshold: S.threshold, moves: S.moves });
+// the three settings that decide how the texts are read: a comparison is made with them, and switching one starts over
+const engineOpts = () => ({ paraMode: S.paraMode, markdown: S.markdown, moves: S.moves });
+const sameOpts = (o, p) => o.paraMode === p.paraMode && o.markdown === p.markdown && o.moves === p.moves;
+// The one-key shortcuts are named in titles and on buttons only while they work (they can be switched off in Settings).
+const keyHint = k => S.keys ? ' (' + k + ')' : '';
+function applyKeys() {
+  document.documentElement.classList.toggle('nokeys', !S.keys);
+  for (const b of $$('[data-key]')) { if (b.dataset.tip == null) b.dataset.tip = b.title; b.title = b.dataset.tip + keyHint(b.dataset.key); }
+}
 
 /* ---------- toasts: stacked, so one can't wipe out another; errors stay longer and are announced right away ---------- */
 // a message goes when a new one of its kind comes, or when it is no longer true
@@ -3437,7 +3540,9 @@ function textChanged() {
   st.version++;
   clearTimeout(liveT); liveT = setTimeout(() => { updateCounts(); updateLive(); }, 350);
 }
-const pct = M => { const p = Math.round(M.stats.similarity * 100); return (p === 100 && M.order.some(id => !['space', 'typo'].includes(M.hunks[id].cat)) ? '>99' : p) + '%'; };
+// a change nobody would notice on screen: spacing or typography, unless it is flagged (a hidden character is)
+const unseen = h => !h.flags.length && (h.cat === 'space' || h.cat === 'typo');
+const pct = M => { const p = Math.round(M.stats.similarity * 100); return (p === 100 && M.order.some(id => !unseen(M.hunks[id])) ? '>99' : p) + '%'; };
 function updateLive() {
   const live = $('#live'), a = ta.value, b = tb.value;
   if (!a.trim() && !b.trim()) { live.innerHTML = ''; return; }
@@ -3447,71 +3552,105 @@ function updateLive() {
   let M;
   try { M = ensureModel(); } catch (e) { console.error(e); live.innerHTML = '<span>Diffy couldn’t compare these texts. Press Compare to see why.</span>'; return; }
   const shown = M.order.filter(id => visible(M.hunks[id])), fl = shown.filter(id => M.hunks[id].flags.length).length, hid = M.order.length - shown.length;
-  if (!M.order.length) { live.innerHTML = '<span>' + (M.A.text === M.B.text ? 'The texts are identical.' : 'Same wording: only invisible formatting differs.') + '</span>'; return; }
+  if (!M.order.length) { live.innerHTML = '<span>The texts are identical.</span>'; return; } // (texts that differ at all have a change)
   live.innerHTML = '<span><b>' + shown.length + '</b> change' + (shown.length === 1 ? '' : 's') + '</span>' + (fl ? '<span class="lf"><b>' + fl + '</b> flagged</span>' : '') +
     (hid ? '<span>' + hid + ' hidden by filters</span>' : '') + '<span><b>' + pct(M) + '</b> similar</span>';
 }
-function setText(side, text, name) {
-  (side === 'a' ? ta : tb).value = text;
-  st.names[side] = name || ''; st.loaded[side] = name ? text : '';
-  st.version++; updateCounts(); updateLive();
+// The state a fresh start leaves behind, and Undo puts back: the texts and the comparison settings, the comparison,
+// and the decisions with the steps Ctrl+Z can undo
+const snapshot = () => ({ a: ta.value, b: tb.value, names: Object.assign({}, st.names), loaded: Object.assign({}, st.loaded), opt: engineOpts(), M: st.M, dec: st.dec, undo: st.undo, redo: st.redo });
+const yourDec = (n, what) => 'Your ' + pl(n, 'decision') + (n === 1 ? ' is ' : ' are ') + what + '.';
+// A fresh start: the decisions made on the last comparison are cleared, and the start goes into the undo history as one
+// step that holds the state before it (snap), so that Ctrl+Z brings all of it back (see undo). Returns that step, or
+// null when nothing was decided and nothing could be undone.
+function startOver(snap) {
+  st.dec = new Map(); st.redo = []; st.undo = snap.dec.size || snap.undo.length ? [{ state: snap }] : [];
+  dropToast('undo'); dropToast('text'); dropToast('done'); // ("Every shown change is reviewed" is no longer true)
+  return st.undo[0] || null;
 }
-const snapshot = () => ({ a: ta.value, b: tb.value, names: Object.assign({}, st.names), loaded: Object.assign({}, st.loaded) });
-function restore(s) {
-  ta.value = s.a; tb.value = s.b; st.names = s.names; st.loaded = s.loaded; st.version++;
-  if (st.screen !== 'compose') showCompose(); else { updateCounts(); updateLive(); }
-  toast('Your texts are back.');
+// Another text put in a box (a file, a paste, the example, a box cleared) is another document: Diffy starts over, as
+// it does when a comparison setting is switched or the texts are swapped. texts, names: by side, 'a' or 'b'.
+function setTexts(texts, names, msg) {
+  const snap = snapshot(), sides = Object.keys(texts);
+  for (const side of sides) { (side === 'a' ? ta : tb).value = texts[side]; st.names[side] = names[side] || ''; st.loaded[side] = names[side] ? texts[side] : ''; }
+  const step = startOver(snap); st.version++; updateCounts(); updateLive();
+  replaced(snap, msg, sides.length === 1 ? sides[0] : '', step);
 }
-// replacing text never loses it silently: the toast offers to put back what was there
-function replaced(snap, msg, side) {
+// The whole text of a box typed over or deleted is another text too (was: what the box held)
+function typedOver(side, was, what) {
+  const snap = Object.assign(snapshot(), { [side]: was }), step = startOver(snap);
+  if (snap.dec.size) replaced(snap, what + ' the ' + (side === 'a' ? 'original' : 'revised text') + '.', side, step);
+}
+// and so is the other box's text: Swap starts over
+function swapTexts() {
+  const snap = snapshot();
+  ta.value = snap.b; tb.value = snap.a;
+  st.names = { a: snap.names.b, b: snap.names.a }; st.loaded = { a: snap.loaded.b, b: snap.loaded.a };
+  const step = startOver(snap); st.version++; updateCounts(); updateLive();
+  if (snap.dec.size) replaced(snap, 'Swapped.', '', step);
+}
+// puts a state back (see snapshot) and shows it
+function putState(s) {
+  ta.value = s.a; tb.value = s.b; st.names = s.names; st.loaded = s.loaded;
+  Object.assign(S, s.opt); save();
+  st.M = s.M; st.dec = s.dec; st.undo = s.undo; st.redo = s.redo; st.cur = -1; st.version++;
+  if (st.modal && st.modal.querySelector('[data-set]')) syncSettings(st.modal); // (an open Settings dialog shows the settings put back)
+  if (st.screen !== 'results') { updateCounts(); updateLive(); }
+  else if (ta.value.trim() && tb.value.trim()) safely(() => { ensureModel(); renderAll(); });
+  else showCompose();
+}
+// Replacing text, or starting over, never loses anything silently: the message offers Undo. After a fresh start it
+// undoes that step, as Ctrl+Z does; after a text replaced with nothing decided, it puts the texts back.
+function replaced(snap, msg, side, step) {
   const lost = side ? (side === 'a' ? snap.a : snap.b).trim() && (side === 'a' ? snap.a !== ta.value : snap.b !== tb.value) : (snap.a.trim() && snap.a !== ta.value) || (snap.b.trim() && snap.b !== tb.value);
-  if (lost) toast(msg, { action: 'Undo', key: 'text', run: () => restore(snap) }); else if (msg) toast(msg);
+  const n = step ? snap.dec.size : 0;
+  if (n) msg = (msg ? msg + (/[.!?]$/.test(msg) ? ' ' : '. ') : '') + yourDec(n, 'cleared');
+  const run = step ? () => { if (st.undo[st.undo.length - 1] === step) undo(); } : () => { putState(snap); toast('Your texts are back.'); };
+  if (lost || n) toast(msg, { action: 'Undo', key: 'text', run }); else if (msg) toast(msg);
 }
 
 /* ---------- comparing ---------- */
-const invert = v => v === 'acc' ? 'rej' : v === 'rej' ? 'acc' : v;
-// A new comparison (after an edit, a setting or a swap) keeps every decision whose change still exists, and the undo
-// history with it. When only a setting changed, a regrouped change inherits the decision its words had.
+// A comparison of the texts edited by typing keeps the decisions whose changes are still there, and the undo history
+// with them. A change is known again by its words and the two words on each side of it, in each draft: the same
+// "10" → "12" in another sentence is another change, and starts undecided. An edit right beside it on one side leaves
+// the other side to know it by. A decision whose change is gone is dropped, and the message says so. (Everything else
+// that changes the comparison starts over: see setTexts.)
 function remap(old, M) {
-  const flip = st.swapped; st.swapped = false;
-  const words = (D, list) => list.map(t => D.toks[t].k).join(' ');
-  const keyNew = h => words(M.A, h.a) + '\u0001' + words(M.B, h.b);
-  const keyOld = h => flip ? words(old.B, h.b) + '\u0001' + words(old.A, h.a) : words(old.A, h.a) + '\u0001' + words(old.B, h.b);
-  const pool = new Map(), idMap = new Map();
-  for (const id of old.order) { const k = keyOld(old.hunks[id]); if (!pool.has(k)) pool.set(k, []); pool.get(k).push(id); }
-  for (const id of M.order) { const l = pool.get(keyNew(M.hunks[id])); if (l && l.length) idMap.set(l.shift(), id); }
-  const dec = new Map(); let lost = 0;
-  for (const [id, v] of st.dec) { if (idMap.has(id)) dec.set(idMap.get(id), flip ? invert(v) : v); else lost++; }
-  const sameTokens = !flip && old.A.text === M.A.text && old.B.text === M.B.text && old.opt.markdown === M.opt.markdown && old.opt.paraMode === M.opt.paraMode;
-  if (lost && sameTokens) {
-    const ownA = new Map(), ownB = new Map();
-    for (const [id, v] of st.dec) if (!idMap.has(id)) { const h = old.hunks[id]; for (const t of h.a) ownA.set(t, v); for (const t of h.b) ownB.set(t, v); }
-    const used = new Set();
-    for (const id of M.order) {
-      if (dec.has(id)) continue;
-      const h = M.hunks[id], vs = new Set();
-      for (const t of h.a) if (ownA.has(t)) vs.add(ownA.get(t));
-      for (const t of h.b) if (ownB.has(t)) vs.add(ownB.get(t));
-      if (vs.size === 1) { dec.set(id, [...vs][0]); used.add(id); }
-    }
-    if (used.size) lost = Math.max(0, lost - used.size);
+  const idMap = new Map(), taken = new Set();
+  const words = (D, list) => {
+    if (!list.length) return ['', '', ''];
+    let lo = list[0], hi = list[0]; for (const t of list) { if (t < lo) lo = t; if (t > hi) hi = t; }
+    const k = i => (D.toks[i] ? D.toks[i].k : '');
+    return [k(lo - 2) + ' ' + k(lo - 1), list.map(t => D.toks[t].k).join(' '), k(hi + 1) + ' ' + k(hi + 2)];
+  };
+  // old changes matched to new ones in reading order: by the words around them on both sides, then on one side only
+  for (const part of [p => p.join('\u0002'), p => p[0] + '\u0002' + p[1], p => p[1] + '\u0002' + p[2]]) {
+    const key = (X, h) => [words(X.A, h.a), words(X.B, h.b)].map(part).join('\u0001'), pool = new Map();
+    for (const id of old.order) if (!idMap.has(id)) { const k = key(old, old.hunks[id]), l = pool.get(k); if (l) l.push(id); else pool.set(k, [id]); }
+    for (const id of M.order) if (!taken.has(id)) { const l = pool.get(key(M, M.hunks[id])); if (l && l.length) { idMap.set(l.shift(), id); taken.add(id); } }
   }
+  const dec = new Map(); let lost = 0;
+  for (const [id, v] of st.dec) { if (idMap.has(id)) dec.set(idMap.get(id), v); else lost++; }
   st.dec = dec;
   const mapEntry = u => {
+    if (u.state) return u; // (a fresh start holds its own comparison)
     const ids = [], before = [];
-    u.ids.forEach((id, i) => { if (idMap.has(id)) { ids.push(idMap.get(id)); before.push(flip ? invert(u.before[i]) : u.before[i]); } });
-    return ids.length ? { ids, before, after: flip ? invert(u.after) : u.after } : null;
+    u.ids.forEach((id, i) => { if (idMap.has(id)) { ids.push(idMap.get(id)); before.push(u.before[i]); } });
+    return ids.length ? { ids, before, after: u.after } : null;
   };
   st.undo = st.undo.map(mapEntry).filter(Boolean); st.redo = st.redo.map(mapEntry).filter(Boolean);
-  // (when the texts were replaced outright, nothing carries over and there's nothing to report)
-  if (lost && (idMap.size || dec.size)) toast(pl(lost, 'decision') + ' no longer ' + (lost === 1 ? 'applies' : 'apply') + ': ' + (lost === 1 ? 'that change is' : 'those changes are') + ' gone or regrouped.', { key: 'remap' });
+  if (lost) toast(pl(lost, 'decision') + ' no longer ' + (lost === 1 ? 'applies' : 'apply') + ': ' + (lost === 1 ? 'that change is' : 'those changes are') + ' gone or regrouped.', { key: 'remap' });
 }
 function ensureModel() {
   if (st.M && st.M.version === st.version) return st.M;
-  const old = st.M;
-  const M = E.compare(ta.value, tb.value, engineOpts());
+  const old = st.M, opt = engineOpts(), same = !!old && sameOpts(old.opt, opt);
+  // the same texts with the same settings are the same comparison: nothing to compare again, nothing to carry over
+  if (same && old.A.text === ta.value && old.B.text === tb.value) { old.version = st.version; return old; }
+  const M = E.compare(ta.value, tb.value, opt);
   M.version = st.version;
-  if (old && (st.dec.size || st.undo.length || st.redo.length)) remap(old, M); else { st.dec = new Map(); st.undo = []; st.redo = []; st.swapped = false; }
+  // (decisions only reach here with texts edited by typing: whatever else changed the comparison started over already,
+  // and a fresh start keeps its own comparison in the undo history: see startOver)
+  if (same && (st.dec.size || st.undo.length || st.redo.length)) remap(old, M);
   st.cur = -1; st.listLimit = 400; st.insightsFor = null;
   st.M = M;
   return M;
@@ -3528,8 +3667,8 @@ function safely(fn) {
 function compareNow() {
   if (st.modal) return;
   const a = ta.value.trim(), b = tb.value.trim();
-  if (!a && !b) { toast('Paste or open two texts first.'); ta.focus(); return; }
-  if (!a || !b) { toast(!a ? 'The Original box is empty. Add the original text first.' : 'The Revised box is empty. Add the revised text first.'); (!a ? ta : tb).focus(); return; }
+  if (!a && !b) { toast('Paste or open two texts first.', { key: 'compare' }); ta.focus(); return; }
+  if (!a || !b) { toast(!a ? 'The Original box is empty. Add the original text first.' : 'The Revised box is empty. Add the revised text first.', { key: 'compare' }); (!a ? ta : tb).focus(); return; }
   const big = ta.value.length + tb.value.length > 250000 && !(st.M && st.M.version === st.version);
   if (!big) { safely(() => { ensureModel(); showResults(); }); return; }
   const busy = document.createElement('div'); busy.className = 'busy'; busy.textContent = 'Reading both versions…';
@@ -3538,12 +3677,15 @@ function compareNow() {
 }
 function showResults(push = true) {
   closePriv();
+  dropToast('compare'); // a hint from an earlier try, "Paste or open two texts first.", is no longer true
   st.screen = 'results';
   $('#compose').hidden = true; $('#results').hidden = false;
   // Back returns to the texts instead of leaving the app
   if (push && !(history.state && history.state.diffy === 'results')) try { history.pushState({ diffy: 'results' }, ''); } catch (e) { /* sandboxed: fine */ }
   renderAll();
   sc.scrollTop = 0;
+  // so the keys scroll the text: Page Down, Space, the arrows
+  sc.focus({ preventScroll: true });
 }
 function showCompose() {
   hideCard(true); closeMenu(); closePriv(); setSheet(false, true);
@@ -3564,7 +3706,7 @@ function computeVis() {
 }
 function stateCls(h) {
   const d = st.dec.get(h.id);
-  return (st.visSet.has(h.id) ? '' : ' off') + (d ? ' ' + d : '') + (h.id === st.cur ? ' cur' : '');
+  return (d ? ' ' + d : '') + (h.id === st.cur ? ' cur' : ''); // (whether it is hidden comes from o.hidden)
 }
 const isNew = h => { const d = st.dec.get(h.id); return d === 'acc' ? true : d === 'rej' ? false : st.pendNew; };
 
@@ -3585,7 +3727,7 @@ const textExt = () => /\.(md|markdown|mdown)$/i.test(st.names.b || st.names.a) ?
 function renderDoc() {
   hideCard(true);
   st.card.rest = true; // new text may now sit under a resting pointer: no hover card until the pointer moves
-  const M = st.M, o = { markup: S.markup, cls: stateCls, dec: h => st.dec.get(h.id) };
+  const M = st.M, o = { markup: S.markup, cls: stateCls, dec: h => st.dec.get(h.id), hidden: h => !st.visSet.has(h.id) };
   $('#finalBar').hidden = S.view !== 'final';
   $('#nav').style.visibility = S.view === 'final' ? 'hidden' : '';
   docEl.classList.toggle('is-split', S.view === 'split');
@@ -3595,16 +3737,14 @@ function renderDoc() {
     $$('#pendSeg button').forEach(b => { const on = (b.dataset.pend === 'new') === st.pendNew; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
     let acc = 0, rej = 0; for (const v of st.dec.values()) v === 'acc' ? acc++ : rej++;
     const pend = M.order.length - acc - rej;
-    // the final text applies every change, also the ones the filters hide: say how many of the undecided those are
-    const pendHid = M.order.filter(id => !st.dec.has(id) && !st.visSet.has(id)).length;
     $('#pendWrap').hidden = pend === 0;
-    $('#finalInfo').textContent = !M.order.length ? 'No changes.' : pend ? acc + ' accepted · ' + rej + ' rejected · ' + pend + ' undecided' + (pendHid ? ' (' + pendHid + ' hidden by filters)' : '') :'All ' + pl(M.order.length, 'change') + ' decided: ' + acc + ' accepted, ' + rej + ' rejected.';
+    $('#finalInfo').textContent = !M.order.length ? 'No changes.' : pend ? acc + ' accepted · ' + rej + ' rejected · ' + pend + ' undecided' : 'All ' + pl(M.order.length, 'change') + ' decided: ' + acc + ' accepted, ' + rej + ' rejected.';
     $('#dlLbl').textContent = 'Download ' + textExt();
     html = '<div class="final" dir="auto" tabindex="-1">' + vis(finalText()) + '</div>';
   } else {
-    if (!M.order.length) html += banner(M.A.text === M.B.text ? 'No differences. The two texts are identical.' : 'Same wording. The texts differ only in ways nobody can see on screen.');
+    if (!M.order.length) html += banner('No differences. The two texts are identical.');
     else if (!st.vis.length) {
-      const minor = M.order.every(id => ['space', 'typo'].includes(M.hunks[id].cat));
+      const minor = M.order.every(id => unseen(M.hunks[id]));
       html += banner((minor ? 'Same wording. ' + pl(M.order.length, 'spacing or typography change') + (M.order.length === 1 ? ' is' : ' are') : 'No visible changes. ' + pl(M.order.length, 'change') + (M.order.length === 1 ? ' is' : ' are')) + ' hidden by the current filters. <button class="link" data-showall>Show ' + (M.order.length === 1 ? 'it' : 'them') + '</button>');
     }
     if (S.view === 'split') {
@@ -3683,9 +3823,9 @@ function renderSummary() {
   const prog = n ? decided / n : 0;
   document.title = n ? 'Diffy · ' + decided + '/' + n + ' reviewed' : 'Diffy';
   $('#summary').innerHTML =
-    '<div class="ring" role="img" aria-label="' + decided + ' of ' + n + ' shown changes reviewed"><svg viewBox="0 0 58 58" aria-hidden="true"><circle class="bgc" cx="29" cy="29" r="24"/><circle class="fgc" cx="29" cy="29" r="24" stroke-dasharray="' + (C * prog).toFixed(1) + ' 999"/></svg><b>' + (!n ? '–' : n < 100 ? decided + '/' + n : Math.round(prog * 100) + '%') + '</b></div>' +
+    '<div class="ring" role="img" aria-label="' + decided + ' of ' + n + ' shown changes reviewed" title="' + decided + ' of ' + n + ' shown changes reviewed"><svg viewBox="0 0 58 58" aria-hidden="true"><circle class="bgc" cx="29" cy="29" r="24"/><circle class="fgc" cx="29" cy="29" r="24" stroke-dasharray="' + (C * prog).toFixed(1) + ' 999"/></svg><b>' + (!n ? '–' : n < 100 ? decided + '/' + n : Math.round(prog * 100) + '%') + '</b></div>' +
     '<div class="sum-txt"><div class="big">' + pl(n, 'change') + (fl ? ' · <span style="color:var(--flag)">' + fl + ' flagged</span>' : '') + '</div>' +
-    '<div class="small">' + (n ? '<span>' + decided + ' of ' + n + ' reviewed</span>' : '') + '<span>' + pct(M) + ' similar</span>' +
+    '<div class="small"><span>' + pct(M) + ' similar</span>' +
     (s.added ? '<span class="plus">+' + pl(s.added, 'word') + '</span>' : '') + (s.removed ? '<span class="minus">−' + pl(s.removed, 'word') + '</span>' : '') +
     (hidden ? '<span>' + hidden + ' hidden' + (hiddenDec ? ' (' + hiddenDec + ' decided)' : '') + ' · <button class="link" data-showall>show all</button></span>' : '') +
     (st.dec.size ? '<button class="link" data-act="cleardec" title="Clear every accept and reject (Ctrl+Z brings them back)">Clear decisions</button>' : '') + '</div></div>';
@@ -3707,7 +3847,8 @@ function presetHidden(p) {
 }
 const hiddenKey = h => Object.keys(h).filter(k => h[k]).sort().join(',');
 function presetOf() { const cur = hiddenKey(S.hidden); const p = PRESETS.find(([k]) => hiddenKey(presetHidden(k)) === cur); return p ? p[0] : ''; }
-function setPreset(p) { S.hidden = presetHidden(p); save(); applyFilters(); }
+// (the filters in use before "Meaning only" are kept, so M can go back to them: see the keyboard)
+function setPreset(p) { if (presetOf() !== 'meaning') st.lastFilter = S.hidden; S.hidden = presetHidden(p); save(); applyFilters(); }
 // re-rendering replaces the buttons: put the keyboard focus back on the same control
 function keepFocus(root, render) {
   const f = document.activeElement, key = f && root.contains(f) ? ['data-cat', 'data-preset', 'data-tier', 'data-fx', 'data-showall'].find(a => f.hasAttribute(a)) : null;
@@ -3722,8 +3863,8 @@ function renderFilters() {
   const pre = presetOf(), hiddenCats = Object.keys(S.hidden).filter(k => S.hidden[k] && cnt[k]);
   let html = '<div class="presets"><span id="showLbl">Show</span><div class="seg" role="group" aria-labelledby="showLbl">' +
     PRESETS.map(([k, l, d]) => '<button data-preset="' + k + '" class="' + (pre === k ? 'on' : '') + '" aria-pressed="' + (pre === k) + '" title="' + esc(d) + '">' + l + '</button>').join('') + '</div></div>' +
-    '<div class="fsum"><span>Showing ' + st.vis.length + ' of ' + M.order.length + '</span>' +
-    (hiddenCats.length ? '<span>· hidden: ' + hiddenCats.slice(0, 3).map(k => esc(CATS[k].label)).join(', ') + (hiddenCats.length > 3 ? '…' : '') + '</span>' : '') +
+    '<div class="fsum"><span>Showing ' + st.vis.length + ' of ' + M.order.length +
+    (hiddenCats.length ? ' · hidden: ' + hiddenCats.slice(0, 3).map(k => esc(CATS[k].label)).join(', ') + (hiddenCats.length > 3 ? '…' : '') : '') + '</span>' +
     '<button class="fbtn" data-fx="toggle" aria-expanded="' + !!S.filtersOpen + '" aria-controls="tiers">' + (S.filtersOpen ? 'Hide categories' : 'Choose categories') + '</button></div>';
   html += '<div id="tiers"' + (S.filtersOpen ? '' : ' hidden') + '>';
   for (const tier of ['meaning', 'content', 'mech']) {
@@ -3743,15 +3884,19 @@ function renderFilters() {
 const listPad = () => { $('#pChanges').style.scrollPaddingTop = (S.filtersOpen ? 0 : $('#filters').offsetHeight) + 'px'; };
 function applyFilters() {
   computeVis();
-  if (!st.visSet.has(st.cur)) st.cur = -1;
+  // a selected change that the filters now hide hands the selection on to the nearest one still shown, after it if
+  // there is one, which is brought into view: J and K carry on from there. (The list is left where it is while the
+  // categories are open above it, so the one just clicked stays in view.)
+  const handOn = st.cur >= 0 && !st.visSet.has(st.cur);
+  if (handOn) { const o = st.M.order, i = o.indexOf(st.cur); st.cur = o.slice(i + 1).concat(o.slice(0, i).reverse()).find(id => st.visSet.has(id)) ?? -1; }
   renderSummary(); renderFilters(); renderList(); renderDoc(); updateNav(); updatePanelBtn();
+  if (handOn && st.cur >= 0) select(st.cur, { flash: false, list: !S.filtersOpen });
   if (st.tab === 'insights') { st.insightsFor = null; renderInsights(); }
 }
 function snippet(h, max) {
   const M = st.M;
   if (h.kind === 'space') {
     if (h.layout) return '<span class="ctx">Line breaks, indentation or blank lines differ in ' + pl(h.places || 1, 'place') + '.</span>';
-    if (h.meta) return '<span class="ctx">' + esc(h.sub) + '.</span>';
     return '<span class="ctx">' + vis(E.contextBefore(M, h, 4)) + '</span> <ins>' + esc(h.sub.toLowerCase()) + '</ins>';
   }
   if (h.kind === 'para') return '<span class="ctx">' + vis(E.contextBefore(M, h, 5)) + '</span> ' + (h.a.length ? '<del>¶</del>' : '<ins>¶</ins>');
@@ -3771,12 +3916,18 @@ function snippet(h, max) {
     }
     return ctxHtml(h) + '<del>' + a + '</del> <span class="arrow">→</span> <ins>' + b + '</ins>';
   }
-  const [la, lb] = h.reorder ? E.spanOf(M, h) : [h.a, h.b];
+  // (formatting is shown with the words it is around: “**very**” → “*very*”, not “****” → “**”)
+  // (and a renumbering by its numbers alone)
+  const [la, lb] = h.reorder || (h.cat === 'format' && !h.numbering) ? E.spanOf(M, h) : [h.a, h.b];
   const a = E.textOf(M.A, la, max), b = E.textOf(M.B, lb, max);
   const pa = a ? '<del>' + vis(a, true) + '</del>' : '', pb = b ? '<ins>' + vis(b, true) + '</ins>' : '';
   return (h.unit ? '' : ctxHtml(h)) + pa + (pa && pb ? ' <span class="arrow">→</span> ' : '') + pb;
 }
-function ctxHtml(h) { const c = E.contextBefore(st.M, h, 4); return c ? '<span class="ctx">' + vis(c) + ' </span>' : ''; }
+// (the context and the change are set apart only where the text has a space between them: “the council “may”)
+function ctxHtml(h) {
+  const c = E.contextBefore(st.M, h, 4), e = st.M.entries[h.first], t = e && (e.b != null ? st.M.B.toks[e.b] : st.M.A.toks[e.a]);
+  return c ? '<span class="ctx">' + vis(c) + (t && !t.pre ? '' : ' ') + '</span>' : '';
+}
 // A flagged change is headed by what makes it matter ("Numbers & dates") with the kind of edit ("Reworded") beside it;
 // any other change by its kind ("Quote style") with its category ("Typography"). Those are the names the filter chips
 // count it under, so the list and the filters agree.
@@ -3788,8 +3939,8 @@ function itemHtml(h, n) {
   const d = st.dec.get(h.id), state = d === 'acc' ? 'accepted' : d === 'rej' ? 'rejected' : '', kind = kindOf(h);
   return '<div class="ci' + (d ? ' dec' : '') + (h.id === st.cur ? ' cur' : '') + '" data-h="' + h.id + '" role="group" tabindex="0" aria-label="Change ' + n + ': ' + esc(headOf(h)) + (kind ? ', ' + esc(kind) : '') + (state ? ', ' + state : '') + '"><div class="ci-top"><span class="tdot t-' + h.tier + '"></span><span class="ci-cat">' + esc(headOf(h)) + '</span>' + (kind ? '<span class="ci-kind">' + esc(kind) + '</span>' : '') +
     (d ? '<span class="ci-state ' + d + '">' + (d === 'acc' ? 'Accepted' : 'Rejected') + '</span>' : '') + '<span class="ci-num">' + n + '</span>' +
-    '<span class="ci-act">' + (h.kind === 'move' ? '<button class="goto" data-act="goto" aria-label="Go to the other end of move ' + n + '" title="Go to the other end of this move (G)">' + icon('swap') + '</button>' : '') + '<button class="acc' + (d === 'acc' ? ' on' : '') + '" data-act="acc" aria-pressed="' + (d === 'acc') + '" aria-label="Accept change ' + n + '" title="' + (d === 'acc' ? 'Accepted: click to undecide' : 'Accept: use the revised wording (A)') + '">' + icon('check') + '</button>' +
-    '<button class="rej' + (d === 'rej' ? ' on' : '') + '" data-act="rej" aria-pressed="' + (d === 'rej') + '" aria-label="Reject change ' + n + '" title="' + (d === 'rej' ? 'Rejected: click to undecide' : 'Reject: keep the original wording (R)') + '">' + icon('x') + '</button></span></div>' +
+    '<span class="ci-act">' + (h.kind === 'move' ? '<button class="goto" data-act="goto" aria-label="Go to the other end of move ' + n + '" title="Go to the other end of this move' + keyHint('G') + '">' + icon('swap') + '</button>' : '') + '<button class="acc' + (d === 'acc' ? ' on' : '') + '" data-act="acc" aria-pressed="' + (d === 'acc') + '" aria-label="Accept change ' + n + '" title="' + (d === 'acc' ? 'Accepted: click to undecide' : 'Accept: use the revised wording' + keyHint('A')) + '">' + icon('check') + '</button>' +
+    '<button class="rej' + (d === 'rej' ? ' on' : '') + '" data-act="rej" aria-pressed="' + (d === 'rej') + '" aria-label="Reject change ' + n + '" title="' + (d === 'rej' ? 'Rejected: click to undecide' : 'Reject: keep the original wording' + keyHint('R')) + '">' + icon('x') + '</button></span></div>' +
     flagHtml(h, 'ci-flag') +
     '<div class="ci-txt" dir="auto">' + snippet(h, 180) + '</div></div>';
 }
@@ -3867,7 +4018,7 @@ function select(id, o = {}) {
   if (el && o.scroll !== false) el.scrollIntoView({ block: 'center', behavior: smooth() ? 'smooth' : 'auto' });
   if (el && o.flash !== false) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
   const ci = clist.querySelector('.ci[data-h="' + id + '"]');
-  if (ci) { listPad(); ci.scrollIntoView({ block: 'nearest' }); }
+  if (ci && o.list !== false) { listPad(); ci.scrollIntoView({ block: 'nearest' }); }
   // with the review panel in view, its highlighted card already shows the details: no floating card over the text
   if (o.card && el && !panelVisible()) { clearTimeout(st.card.tShow); st.card.tShow = setTimeout(() => showCard(id, el, true), o.scroll === false ? 0 : 320); }
   else if (o.card) hideCard(true);
@@ -3918,7 +4069,9 @@ function act(val, advance) {
 function bulk(val) {
   const ids = st.vis.slice(); if (!ids.length) { toast('No changes are shown.'); return; }
   decide(ids, val);
-  toast((val === 'acc' ? 'Accepted ' : 'Rejected ') + pl(ids.length, 'shown change') + '.', { action: 'Undo', key: 'undo', run: undo });
+  // the changes the filters hide are left as they were: say so, since the Final text applies the undecided ones
+  const hid = st.M.order.filter(id => !st.visSet.has(id) && !st.dec.has(id)).length;
+  toast((val === 'acc' ? 'Accepted ' : 'Rejected ') + pl(ids.length, 'shown change') + '.' + (hid ? ' ' + pl(hid, 'change') + ' hidden by filters ' + (hid === 1 ? 'is' : 'are') + ' still undecided.' : ''), { action: 'Undo', key: 'undo', run: undo });
 }
 function clearDecisions() {
   if (!st.dec.size) { toast('There are no decisions to clear.'); return; }
@@ -3932,6 +4085,7 @@ function decide(ids, val) {
   const before = ids.map(id => st.dec.get(id) || null);
   for (const id of ids) val ? st.dec.set(id, val) : st.dec.delete(id);
   st.undo.push({ ids, before, after: val }); st.redo.length = 0;
+  dropToast('text'); // (a message offering to undo a fresh start: the last step is this one now)
   afterDecide(ids);
 }
 function afterDecide(ids) {
@@ -3950,11 +4104,14 @@ function afterDecide(ids) {
 }
 function undo() {
   const u = st.undo.pop(); if (!u) { toast('Nothing to undo.'); return; }
+  // a fresh start: the state before it comes back, and the state after it waits to be redone
+  if (u.state) { const now = snapshot(); dropToast('text'); putState(Object.assign({}, u.state, { redo: [{ state: now }] })); toast('Undone.' + (u.state.dec.size ? ' ' + yourDec(u.state.dec.size, 'back') : ''), { key: 'undo' }); return; }
   u.ids.forEach((id, i) => u.before[i] ? st.dec.set(id, u.before[i]) : st.dec.delete(id));
   st.redo.push(u); afterDecide(u.ids); toast('Undone.', { key: 'undo' });
 }
 function redo() {
   const u = st.redo.pop(); if (!u) { toast('Nothing to redo.'); return; }
+  if (u.state) { const now = snapshot(); putState(Object.assign({}, u.state, { undo: [{ state: now }] })); toast('Redone.' + (now.dec.size ? ' ' + yourDec(now.dec.size, 'cleared') : ''), { key: 'undo' }); return; }
   u.ids.forEach(id => u.after ? st.dec.set(id, u.after) : st.dec.delete(id));
   st.undo.push(u); afterDecide(u.ids); toast('Redone.', { key: 'undo' });
 }
@@ -4042,9 +4199,61 @@ function jumpMove(id, from) {
 }
 
 /* ---------- files ---------- */
-const ENC_NAME = { 'utf-16le': 'UTF-16', 'utf-16be': 'UTF-16', shift_jis: 'Shift-JIS', 'euc-jp': 'EUC-JP', gb18030: 'GB18030 (Chinese)', big5: 'Big5 (Chinese)', 'euc-kr': 'EUC-KR (Korean)', 'windows-1251': 'Windows Cyrillic', 'windows-1252': 'Windows Western' };
-const ENC_SCRIPT = { shift_jis: /[\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Han}ー、。「」]/u, 'euc-jp': /[\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Han}ー、。「」]/u, gb18030: /[\p{sc=Han}，。、“”]/u, big5: /[\p{sc=Han}，。、]/u, 'euc-kr': /[\p{sc=Hangul}\p{sc=Han}]/u, 'windows-1251': /\p{sc=Cyrillic}/u, 'windows-1252': /\p{sc=Latin}/u };
-// Not UTF-8? Try the common legacy encodings and keep the one whose non-ASCII characters look like real text.
+const ENC_NAME = { 'utf-16le': 'UTF-16', 'utf-16be': 'UTF-16', shift_jis: 'Shift-JIS', 'euc-jp': 'EUC-JP', gb18030: 'GB18030 (Chinese)', big5: 'Big5 (Chinese)', 'euc-kr': 'EUC-KR (Korean)', 'windows-1252': 'Windows Western', 'windows-1254': 'Windows Turkish', 'windows-1250': 'Windows Central European', 'windows-1253': 'Windows Greek', 'windows-1255': 'Windows Hebrew', 'windows-1256': 'Windows Arabic', 'windows-1251': 'Windows Cyrillic', 'koi8-r': 'KOI8-R (Russian)' };
+// The legacy encodings, in the order they are tried (an earlier one wins a tie), each with the letters of its alphabet
+// and what a word that holds them looks like. These old Japanese, Korean and Chinese encodings share their bytes, so
+// each reads the others' text as characters of its own: Japanese text has kana in it (the half-width ones aside, which
+// is what Western text read as Japanese is full of), and a Korean word is not Hangul and Chinese characters mixed. None
+// of them puts a character inside a Latin word ("na漢e"), though a Latin word may stand right beside them ("Diffyで").
+// The Western, Turkish and Central European ones differ in a few letters only. A Western word has plain letters beside
+// its accented ones ("Café"), and no ð, þ or ý unless the text is Icelandic, with an æ somewhere ("Þiþli" is Turkish
+// "Şişli" read as Western). No Latin word has a small raised digit inside it ("wi³cej" is Polish "więcej").
+// Greek, Hebrew, Arabic and Cyrillic words have no plain letter or digit in them ("Cafй" and "Ђ5" are Western text read
+// as Cyrillic). A Greek or Cyrillic word is in small letters or starts with a capital ("пРИВЕТ" is Russian read in the
+// wrong one of its two encodings; one in capitals tells nothing either way), and a Greek one has a vowel, no ς inside it
+// and no ΰ (which Hebrew read as Greek is full of); a Hebrew or Arabic one, few vowel points, and a Hebrew one no final
+// letter inside it (ן, ם…: Russian read as Hebrew is full of them). Cyrillic comes last: the others' text read as
+// Cyrillic still makes Cyrillic letters.
+const KANA = /[\p{sc=Hiragana}゠-ヿ]/u, JAPANESE = /[\p{sc=Hiragana}゠-ヿ\p{sc=Han}]/u;
+const notInLatin = w => !/[A-Za-z][^\u0000-\u007F]+[A-Za-z]/.test(w);
+const latin = w => /[A-Za-z]/.test(w) && !/\p{No}/u.test(w), alone = w => !/[A-Za-z0-9]/.test(w);
+const cased = w => /^\p{Lu}?[\p{Ll}\p{M}]+$/u.test(w) ? true : /^[\p{Lu}\p{M}]+$/u.test(w) ? null : false; // null: no evidence
+// a Hebrew or Arabic word starts with a letter and has no more vowel points than letters (Russian read as Hebrew is
+// mostly points)
+const pointed = w => /^\p{L}/u.test(w) && (w.match(/\p{M}/gu) || []).length <= (w.match(/\p{L}/gu) || []).length;
+const ENCODINGS = {
+  shift_jis: [JAPANESE, notInLatin], 'euc-jp': [JAPANESE, notInLatin],
+  'euc-kr': [/[\p{sc=Hangul}\p{sc=Han}]/u, w => notInLatin(w) && !(/\p{sc=Hangul}/u.test(w) && /\p{sc=Han}/u.test(w))],
+  gb18030: [/\p{sc=Han}/u, notInLatin], big5: [/\p{sc=Han}/u, notInLatin],
+  'windows-1252': [/\p{sc=Latin}/u, (w, smp) => latin(w) && (!/[ÐðÞþÝý]/.test(w) || /[æÆ]/.test(smp))],
+  'windows-1254': [/\p{sc=Latin}/u, latin], 'windows-1250': [/\p{sc=Latin}/u, latin],
+  'windows-1253': [/\p{sc=Greek}/u, w => alone(w) && !/ς\p{L}|ΰ/u.test(w) && /[αεηιουωάέήίόύώϊϋΐ]/iu.test(w) && cased(w)],
+  'windows-1255': [/\p{sc=Hebrew}/u, w => alone(w) && pointed(w) && !/[ךםןףץ]\p{L}/u.test(w)], 'windows-1256': [/\p{sc=Arabic}/u, w => alone(w) && pointed(w)],
+  'windows-1251': [/\p{sc=Cyrillic}/u, w => alone(w) && cased(w)], 'koi8-r': [/\p{sc=Cyrillic}/u, w => alone(w) && cased(w)],
+};
+// How much a decoding reads like real text, from 0 to 1: the share of its characters beyond plain ASCII that stand in
+// words of two letters or more that look right. A control character never does, nor a private-use or unassigned one,
+// which is what much of Big5 text (Taiwan, Hong Kong) turns into when read as GB18030 (mainland China). One Japanese,
+// Korean or Chinese character stuck to a Latin word tells nothing: "Diffy는" is Korean, but "It抯" is Western "It’s",
+// its apostrophe and its "s" read as one character. With nothing to tell by: a half, but none for Japanese, Korean or
+// Chinese, whose text is full of their characters.
+function plausibility(text, enc) {
+  const [script, fits] = ENCODINGS[enc], smp = text.slice(0, 20000), cjk = !/^(?:windows|koi8)/.test(enc);
+  if (script === JAPANESE && !KANA.test(smp)) return 0;
+  // Arabic, Persian and Urdu text is full of ل, م, ن, ه, و and ي. Russian or Greek read as Arabic makes Arabic letters
+  // too, but hardly any of these.
+  if (enc === 'windows-1256' && (smp.match(/[لمنهوىي]/gu) || []).length < 0.15 * (smp.match(/\p{sc=Arabic}/gu) || []).length) return 0;
+  let good = 0, bad = 0;
+  for (const [w] of smp.matchAll(/[\p{L}\p{M}\p{N}]{2,}|[\u0080-\u009F\p{Co}\p{Cn}]/gu)) {
+    const odd = w.match(/[^\u0000-\u007F\p{N}]/gu); if (!odd) continue;
+    if (cjk && odd.length === 1 && /[A-Za-z]/.test(w)) continue;
+    const ok = odd.every(c => script.test(c)) ? fits(w, smp) : false;
+    if (ok === null) continue;
+    if (ok) good += odd.length; else bad += odd.length;
+  }
+  return good + bad ? good / (good + bad) : cjk ? 0 : 0.5;
+}
+// Not UTF-8? Try the common legacy encodings and keep the one that reads most like real text.
 function decodeText(u8) {
   if (u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF) return { text: new TextDecoder('utf-8').decode(u8.subarray(3)), enc: 'utf-8' };
   if (u8[0] === 0xFF && u8[1] === 0xFE) return { text: new TextDecoder('utf-16le').decode(u8.subarray(2)), enc: 'utf-16le' };
@@ -4054,15 +4263,17 @@ function decodeText(u8) {
   if (n > 8 && zo / (n / 2) > 0.3 && ze / (n / 2) < 0.05) return { text: new TextDecoder('utf-16le').decode(u8), enc: 'utf-16le' };
   if (n > 8 && ze / (n / 2) > 0.3 && zo / (n / 2) < 0.05) return { text: new TextDecoder('utf-16be').decode(u8), enc: 'utf-16be' };
   try { return { text: new TextDecoder('utf-8', { fatal: true }).decode(u8), enc: 'utf-8' }; } catch (e) { /* not UTF-8 */ }
+  // UTF-8 with a few bytes spoilt (a character from an old Windows program pasted in) is still UTF-8: only those bytes
+  // are lost, and show as �. Read in a legacy encoding instead, every accented letter of it would come out wrong.
+  const loose = new TextDecoder('utf-8').decode(u8), lost = (loose.match(/\uFFFD/g) || []).length;
+  if ((loose.match(/[^\u0000-\u007F\uFFFD]/gu) || []).length >= 4 * lost) return { text: loose, enc: 'utf-8' };
   let best = null;
-  for (const enc of Object.keys(ENC_SCRIPT)) {
+  for (const enc of Object.keys(ENCODINGS)) {
     let text; try { text = new TextDecoder(enc, { fatal: true }).decode(u8); } catch (e) { continue; }
-    const smp = text.slice(0, 20000); let non = 0, good = 0;
-    for (const ch of smp) if (ch.charCodeAt(0) > 127) { non++; if (ENC_SCRIPT[enc].test(ch)) good++; }
-    const score = non ? good / non : 0;
+    const score = plausibility(text, enc);
     if (!best || score > best.score + 0.05) best = { text, enc, score };
   }
-  return best || { text: new TextDecoder('windows-1252').decode(u8), enc: 'windows-1252' };
+  return best; // (never empty: Western reads any bytes)
 }
 async function readFile(file) {
   if (file.size > 40 * 1024 * 1024) throw new Error('That file is over 40 MB. Diffy is built for prose; try a smaller text.');
@@ -4079,6 +4290,9 @@ async function readFile(file) {
   }
   let { text, enc } = decodeText(u8);
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  // Windows and old Mac line endings become plain ones. A text box would do that anyway, and the comparison counts on it:
+  // done here, the text is the same when the tests read a file without a box.
+  text = text.replace(/\r\n?/g, '\n');
   const head = text.slice(0, 8192), ctl = (head.match(/[\u0000-\u0008\u000E-\u001F\u007F-\u009F]/g) || []).length;
   if (/^PK\u0003\u0004|^%PDF|^\{\\rtf/.test(head) || ctl > Math.max(2, head.length * 0.02)) throw new Error('“' + file.name + '” isn’t plain text or a Word document. Copy its text and paste it in instead.');
   if (/\.(x?html?)$/i.test(file.name)) text = htmlToText(text);
@@ -4240,11 +4454,9 @@ function htmlToText(html) {
   return out.replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
 }
 async function loadFile(side, file) {
-  const snap = snapshot();
   try {
     const { text, enc } = await readFile(file);
-    setText(side, text, file.name);
-    replaced(snap, 'Loaded ' + file.name + (enc && enc !== 'utf-8' ? ' (read as ' + ENC_NAME[enc] + ')' : '') + (text.trim() ? '' : '. It contains no text.'), side);
+    setTexts({ [side]: text }, { [side]: file.name }, 'Loaded ' + file.name + (enc && enc !== 'utf-8' ? ' (read as ' + ENC_NAME[enc] + ')' : '') + (text.trim() ? '' : '. It contains no text.'));
     return true;
   } catch (e) { toast(e.message || 'Could not read that file.', { error: true }); return false; }
 }
@@ -4252,11 +4464,9 @@ async function loadTwo(files) {
   if (files.length > 2) { toast('Diffy compares two texts. Drop one or two files at a time.'); return; }
   const same = files[0].lastModified === files[1].lastModified;
   const [f1, f2] = same ? files : files.slice().sort((p, q) => p.lastModified - q.lastModified);
-  const snap = snapshot();
   try {
     const [x, y] = await Promise.all([readFile(f1), readFile(f2)]);
-    setText('a', x.text, f1.name); setText('b', y.text, f2.name);
-    replaced(snap, same ? 'First file → Original, second → Revised' : 'Older file → Original, newer → Revised');
+    setTexts({ a: x.text, b: y.text }, { a: f1.name, b: f2.name }, same ? 'First file → Original, second → Revised' : 'Older file → Original, newer → Revised');
     compareNow();
   } catch (e) { toast(e.message || 'Could not read those files.', { error: true }); }
 }
@@ -4364,6 +4574,11 @@ function closeModal() {
 }
 const segCtl = (key, opts) => '<div class="seg" role="group" aria-labelledby="lbl-' + key + '" data-set="' + key + '">' + opts.map(([v, l]) => { const on = String(S[key]) === String(v); return '<button data-v="' + v + '" class="' + (on ? 'on' : '') + '" aria-pressed="' + on + '">' + l + '</button>'; }).join('') + '</div>';
 const tglCtl = key => '<button class="tgl' + (S[key] ? ' on' : '') + '" data-tgl="' + key + '" role="switch" aria-checked="' + !!S[key] + '" aria-labelledby="lbl-' + key + '"></button>';
+// an open Settings dialog shows the settings as they are now, in place (Ctrl+Z can put a comparison setting back)
+function syncSettings(m) {
+  for (const seg of $$('[data-set]', m)) for (const b of $$('button', seg)) { const on = String(S[seg.dataset.set]) === b.dataset.v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }
+  for (const b of $$('[data-tgl]', m)) { const on = !!S[b.dataset.tgl]; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); }
+}
 const setRow = (key, label, hint, ctl) => '<div class="set"><div class="lbl"><div id="lbl-' + key + '">' + label + '</div>' + (hint ? '<small>' + hint + '</small>' : '') + '</div>' + ctl + '</div>';
 function openSettings() {
   openModal(
@@ -4375,11 +4590,11 @@ function openSettings() {
     setRow('size', 'Text size', '', '<input type="range" min="14" max="24" step="1" data-range="size" value="' + S.size + '" aria-labelledby="lbl-size" aria-valuetext="' + S.size + ' pixels"><span class="rangev" id="sizeV">' + S.size + 'px</span>') +
     setRow('width', 'Line length', '', segCtl('width', [['narrow', 'Narrow'], ['normal', 'Comfortable'], ['wide', 'Wide']])) +
     setRow('markup', 'Show formatting marks', 'Display Markdown symbols like ## and ** faintly in the document.', tglCtl('markup')) +
+    setRow('keys', 'One-key shortcuts', 'J, K, A, R and the other shortcuts that are a single key. Switch them off if you use speech input or tend to bump keys. Shortcuts with ' + (isMac ? '⌘' : 'Ctrl') + ' keep working.', tglCtl('keys')) +
     '<h3>Comparison</h3>' +
     setRow('paraMode', 'Paragraphs', 'Auto uses blank lines when the text has them, joins hard-wrapped lines, and otherwise treats every line as a paragraph.', segCtl('paraMode', [['auto', 'Auto'], ['blank', 'Blank lines'], ['line', 'Each line']])) +
     setRow('markdown', 'Read Markdown & HTML', 'Treat **bold**, # headings, [links](…) and &lt;tags&gt; as formatting: changes to them are filed under Formatting, and a link that now points elsewhere is flagged. Off: compare them as plain characters.', tglCtl('markdown')) +
     setRow('moves', 'Detect moved text', 'Recognize sentences and paragraphs that were relocated, even when also edited.', tglCtl('moves')) +
-    setRow('threshold', 'Rewrite threshold', 'Sentences less similar than this are shown as rewritten instead of word by word.', '<input type="range" min="20" max="80" step="5" data-range="threshold" value="' + Math.round(S.threshold * 100) + '" aria-labelledby="lbl-threshold" aria-valuetext="' + Math.round(S.threshold * 100) + ' percent"><span class="rangev" id="thrV">' + Math.round(S.threshold * 100) + '%</span>') +
     '<h3>Privacy</h3>' +
     setRow('warnClose', 'Warn before closing', 'Ask before the tab closes while texts are loaded, since texts are never saved.', tglCtl('warnClose')) +
     setRow('reset', 'Forget my settings', 'Removes the only thing Diffy keeps: these preferences, stored in this browser.', '<button class="btn sm" data-reset aria-labelledby="lbl-reset">Reset</button>'),
@@ -4392,13 +4607,12 @@ function openSettings() {
         else if (b.hasAttribute('data-reset')) {
           try { localStorage.removeItem(LS); } catch (x) { /* ignore */ }
           S = JSON.parse(JSON.stringify(DEF)); st.pendNew = true; st.lastDoc = S.view;
-          applyTheme(); applyType(); closeModal(); onSetting('paraMode'); toast('Settings reset. Nothing is stored now.');
+          applyTheme(); applyType(); applyKeys(); closeModal(); onSetting('paraMode'); toast('Settings reset. Nothing is stored now.');
         }
       });
       m.addEventListener('input', e => {
         const r = e.target.closest('[data-range]'); if (!r) return;
-        if (r.dataset.range === 'size') { S.size = +r.value; $('#sizeV').textContent = S.size + 'px'; r.setAttribute('aria-valuetext', S.size + ' pixels'); applyType(); }
-        else { S.threshold = +r.value / 100; $('#thrV').textContent = r.value + '%'; r.setAttribute('aria-valuetext', r.value + ' percent'); }
+        S.size = +r.value; $('#sizeV').textContent = S.size + 'px'; r.setAttribute('aria-valuetext', S.size + ' pixels'); applyType();
       });
       m.addEventListener('change', e => { const r = e.target.closest('[data-range]'); if (!r) return; save(); onSetting(r.dataset.range); });
     });
@@ -4407,9 +4621,14 @@ function onSetting(k) {
   if (k === 'theme' || k === 'oled') applyTheme();
   else if (k === 'font' || k === 'size' || k === 'width') { applyType(); if (st.screen === 'results') requestAnimationFrame(buildMinimap); }
   else if (k === 'markup') { if (st.screen === 'results') renderDoc(); }
-  else if (k === 'paraMode' || k === 'markdown' || k === 'moves' || k === 'threshold') {
+  else if (k === 'keys') { applyKeys(); if (st.screen === 'results') renderList(); }
+  else if (k === 'paraMode' || k === 'markdown' || k === 'moves') {
+    // The texts read another way are another comparison: Diffy starts over (see setTexts). (Choosing the setting the
+    // comparison was made with changes nothing; and a comparison with decisions has the settings they were made with.)
+    const snap = st.M && !sameOpts(st.M.opt, engineOpts()) ? Object.assign(snapshot(), { opt: st.M.opt }) : null, step = snap && startOver(snap);
     st.version++;
     if (st.screen === 'results' && ta.value.trim() && tb.value.trim()) safely(() => { ensureModel(); renderAll(); }); else { updateCounts(); updateLive(); }
+    if (snap && snap.dec.size) replaced(snap, 'Compared again with the new setting.', '', step);
   }
 }
 function openHelp() {
@@ -4418,8 +4637,8 @@ function openHelp() {
     [['J'], 'Next change'], [['K'], 'Previous change'], [['F'], 'Next flagged change'], [['Shift', 'F'], 'Previous flagged change'],
     [['A'], 'Accept (use the revised wording), then go to the next open change'], [['R'], 'Reject (keep the original wording), then go to the next open change'],
     [['U'], 'Clear the decision'], [['Shift', 'A'], 'Accept every shown change'], [['Shift', 'R'], 'Reject every shown change'],
-    [[mod, 'Z'], 'Undo a decision'], [[mod, 'Shift', 'Z'], 'Redo (also ' + mod + '+Y)'], [['1'], 'Inline view'], [['2'], 'Side-by-side view'], [['3'], 'Final text'],
-    [['G'], 'Go to the other end of a moved passage'], [['L'], 'Show or hide the review panel'], [['M'], 'Switch between “Meaning only” and “Default”'], [['E'], 'Edit the texts'], [['C'], 'Copy the final text'],
+    [[mod, 'Z'], 'Undo a decision, or bring back decisions that were cleared'], [[mod, 'Shift', 'Z'], 'Redo (also ' + mod + '+Y)'], [['1'], 'Inline view'], [['2'], 'Side-by-side view'], [['3'], 'Final text'],
+    [['G'], 'Go to the other end of a moved passage'], [['L'], 'Show or hide the review panel'], [['M'], 'Show “Meaning only”, and back to the filters you had'], [['E'], 'Edit the texts'], [['C'], 'Copy the final text'],
     [[mod, '↵'], 'Compare'], [[mod, 'V'], 'With no box selected: fill the next empty one, then compare'], [['Esc'], 'Close the panel, card, menu or dialog'],
   ];
   const legend = t => TIER_CATS[t].map(k => '<div><span class="tdot t-' + t + '"></span><span><b>' + esc(CATS[k].label) + '</b> <small>' + esc(CATS[k].desc) + '</small></span></div>').join('');
@@ -4427,9 +4646,10 @@ function openHelp() {
   const cats = t => '<details class="cats"><summary><span class="tdot t-' + t + '"></span>' + E.TIERS[t].label + '<small>' + esc(E.TIERS[t].desc) + (t === 'meaning' ? ', flagged with a yellow dot' : '') + '</small></summary><div class="legend">' + legend(t) + '</div></details>';
   openModal(
     '<h2 id="mTitle">How Diffy works<button class="icon-btn" data-close title="Close" aria-label="Close help"><i data-icon="x"></i></button></h2>' +
-    '<p class="lede">Paste or drop two drafts and press Compare. Go through the changes with J and K (or the list of changes) and <b>Accept</b> each one to use the revised wording or <b>Reject</b> it to keep the original. Then open <b>Final</b> to copy or download the text with your decisions applied. Changes you haven’t decided follow the “Undecided changes” choice there.</p>' +
+    '<p class="lede">Paste or drop two drafts and press Compare. Go through the changes ' + (S.keys ? 'with J and K (or the list of changes)' : 'in the list of changes') + ' and <b>Accept</b> each one to use the revised wording or <b>Reject</b> it to keep the original. Then open <b>Final</b> to copy or download the text with your decisions applied. Changes you haven’t decided follow the “Undecided changes” choice there.</p>' +
     '<h3>Reading the marks</h3><div class="prose-sm"><span class="h"><del class="d">Struck red</del></span> was removed, <span class="h"><ins class="i">underlined green</ins></span> was added, blue is moved text with a “moved” tag at each end, and a yellow dot and underline flag a change that can alter the meaning. After a decision, an accepted change keeps a solid green underline and a rejected one a dashed red underline. ¶ marks a paragraph split or merge; · and ↵ mark spacing and line-break changes. Hidden characters show as small yellow badges such as <span class="ctl">ZWSP</span> or <span class="ctl">RLO</span>.</div>' +
-    '<h3>Keyboard</h3><div class="keys">' + keys.map(([k, d]) => '<span>' + k.map(x => '<kbd>' + x + '</kbd>').join('') + '</span><span>' + d + '</span>').join('') + '</div>' +
+    '<h3>Keyboard</h3><div class="keys">' + keys.filter(([k]) => S.keys || k.includes(mod) || k[0] === 'Esc').map(([k, d]) => '<span>' + k.map(x => '<kbd>' + x + '</kbd>').join('') + '</span><span>' + d + '</span>').join('') + '</div>' +
+    '<p class="note">The shortcuts that are a single key ' + (S.keys ? 'can be switched off in Settings.' : 'are switched off in Settings, so only these work now.') + '</p>' +
     '<h3>Files and exports</h3><div class="prose-sm">Drag a file over the window and it shows two halves, Original and Revised: drop the file on the one it belongs to. Or drop two files anywhere (the older becomes the original). Word files (<code>.docx</code>) open directly and are read the way they look when opened: tracked changes as accepted, hidden text left out. A table is read row by row, headers come first and footers last, and footnotes are numbered and listed at the end. Struck-through words and the address behind a link are written the Markdown way, as <code>~~struck~~</code> and <code>[words](address)</code>. The Export button above the text gives you the final text, a self-contained redline page and <code>CriticMarkup</code> with your decisions applied.</div>' +
     '<h3>What the categories mean</h3>' + cats('meaning') + cats('content') + cats('mech') +
     '<p class="note">Polarity, Obligation, Scope, Tone and Spelling go by English word lists. The comparison itself, and the flags for figures, links and look-alike characters, work in any language.</p>' +
@@ -4470,32 +4690,34 @@ const EX_A = 'The Lighthouse Proposal\n\nIn 2019, the town council commissioned 
 const EX_B = 'The Lighthouse Proposal\n\nIn 2019, the town council commissioned a study of the old lighthouse on Gull Point. The report found that the structure was sound, but that repairs would cost roughly 15 percent more than the original estimate. All members argued that the building should be sold to a private buyer. Others felt it was worth keeping as a museum.\n\nDr. Marta Okafor, who led the study, said the council “must act before winter.” She didn\'t expect the color of the tower to change, and she noted that the lamp room had never received proper maintenance.\n\nThe damage occurred slowly, over many years, and was largely invisible from the shore.\n\nA public meeting is scheduled for March 14, and everyone is welcome to attend. The committee will not approve the funding unless the community supports it. Volunteers have already offered to paint the railings.\n';
 
 function loadExample() {
-  const snap = snapshot();
-  setText('a', EX_A, 'Lighthouse · draft 1'); setText('b', EX_B, 'Lighthouse · draft 2');
-  replaced(snap, 'Loaded the example.'); compareNow();
+  setTexts({ a: EX_A, b: EX_B }, { a: 'Lighthouse · draft 1', b: 'Lighthouse · draft 2' }, 'Loaded the example.');
+  compareNow();
 }
 
 /* ---------- wiring ---------- */
 function wire() {
-  ta.addEventListener('input', textChanged); tb.addEventListener('input', textChanged);
+  // The whole text of a box typed over, or deleted, is another text: Diffy starts over (see typedOver). was: what the
+  // box held before the latest input.
+  for (const [side, area] of [['a', ta], ['b', tb]]) {
+    let was = '';
+    area.addEventListener('beforeinput', e => {
+      was = area.value;
+      if (was.trim() && area.selectionStart === 0 && area.selectionEnd === was.length) typedOver(side, was, /^delete/.test(e.inputType) ? 'Cleared' : 'Replaced');
+    });
+    area.addEventListener('input', () => { if (was.trim() && !area.value.trim()) typedOver(side, was, 'Cleared'); textChanged(); });
+  }
   $('#compareBtn').addEventListener('click', compareNow);
   $('#exampleBtn').addEventListener('click', loadExample);
-  $('#swapBtn').addEventListener('click', () => {
-    const a = ta.value; ta.value = tb.value; tb.value = a;
-    st.names = { a: st.names.b, b: st.names.a }; st.loaded = { a: st.loaded.b, b: st.loaded.a };
-    if (st.dec.size) { st.swapped = true; toast('Swapped. Your decisions are flipped to match.'); }
-    st.version++; updateCounts(); updateLive();
-  });
+  $('#swapBtn').addEventListener('click', swapTexts);
   for (const cardEl of [$('#cardA'), $('#cardB')]) {
     const side = cardEl.dataset.side, area = side === 'a' ? ta : tb, label = side === 'a' ? 'original' : 'revised text';
     cardEl.addEventListener('click', e => {
       const b = e.target.closest('[data-act]'); if (!b) return;
       if (b.dataset.act === 'open') { const f = $('#fileIn'); f.dataset.side = side; f.value = ''; f.click(); }
-      else if (b.dataset.act === 'clear') { const snap = snapshot(); setText(side, '', ''); area.focus(); replaced(snap, 'Cleared the ' + label + '.', side); }
+      else if (b.dataset.act === 'clear') { setTexts({ [side]: '' }, {}, 'Cleared the ' + label + '.'); area.focus(); }
       else if (b.dataset.act === 'paste') {
         if (!navigator.clipboard || !navigator.clipboard.readText) { toast('Clipboard reading isn’t available here. Click the box and press ' + (isMac ? '⌘' : 'Ctrl') + '+V.'); area.focus(); return; }
-        const snap = snapshot();
-        navigator.clipboard.readText().then(t => { setText(side, t, ''); replaced(snap, 'Pasted ' + pl(E.countWords(t, engineOpts()), 'word') + '.', side); }).catch(() => { toast('Clipboard access was blocked. Click the box and press ' + (isMac ? '⌘' : 'Ctrl') + '+V.'); area.focus(); });
+        navigator.clipboard.readText().then(t => setTexts({ [side]: t }, {}, 'Pasted ' + pl(E.countWords(t, engineOpts()), 'word') + '.')).catch(() => { toast('Clipboard access was blocked. Click the box and press ' + (isMac ? '⌘' : 'Ctrl') + '+V.'); area.focus(); });
       }
     });
   }
@@ -4534,8 +4756,8 @@ function wire() {
     e.preventDefault();
     const side = !ta.value.trim() ? 'a' : !tb.value.trim() ? 'b' : null;
     if (!side) { toast('Both boxes are full. Click one to paste into it.'); return; }
-    setText(side, text, '');
-    if (side === 'b') compareNow(); else toast('Pasted as Original. Paste again for Revised.');
+    setTexts({ [side]: text }, {}, side === 'a' ? 'Pasted as Original. Paste again for Revised.' : '');
+    if (side === 'b') compareNow();
   });
   // copying from the document gives readable text: one version of each change, without the markers
   docEl.addEventListener('copy', e => {
@@ -4548,8 +4770,9 @@ function wire() {
     // side by side, each column is one draft and is copied as it reads (dropping the "other" version there once left
     // holes where the changed words were); inline, one version of each change is kept
     if (S.view !== 'split') {
-      if (host && !box.querySelector('[data-h]')) for (const x of $$(keep(+host.dataset.h) ? 'del' : 'ins', box)) x.remove();
-      for (const h of $$('[data-h]', box)) for (const x of $$(keep(+h.dataset.h) ? 'del' : 'ins', h)) x.remove();
+      // (the two versions are told apart by their marks, d and i: a change the filters hide has no del or ins)
+      if (host && !box.querySelector('[data-h]')) for (const x of $$(keep(+host.dataset.h) ? '.d' : '.i', box)) x.remove();
+      for (const h of $$('[data-h]', box)) for (const x of $$(keep(+h.dataset.h) ? '.d' : '.i', h)) x.remove();
     }
     for (const x of $$('.mvtag,.wsm,.ctl,.pm', box)) x.remove();
     for (const p of $$('p', box)) p.append('\n\n');
@@ -4696,12 +4919,14 @@ function wire() {
       else if (!card.hidden) hideCard(true); else if (st.cur >= 0) select(-1);
       return;
     }
-    if (st.modal) return; // nothing acts behind an open dialog, Compare included
+    // Undo and Redo work on both screens and in Settings, where a fresh start can begin; not in a text box, which has
+    // its own, nor behind another dialog
+    if (mod && !typing && /^[zy]$/i.test(e.key) && (!st.modal || st.modal.querySelector('[data-set]'))) { e.preventDefault(); /y/i.test(e.key) || e.shiftKey ? redo() : undo(); return; }
+    if (st.modal) return; // nothing else acts behind an open dialog, Compare included
     if (mod && e.key === 'Enter') { e.preventDefault(); compareNow(); return; }
     if (typing) return;
+    if (!S.keys && !mod && e.key.length === 1) return; // the one-key shortcuts are switched off in Settings
     if (st.screen !== 'results') { if (e.key === '?') { openHelp(); e.preventDefault(); } return; }
-    if (mod && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
-    if (mod && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); redo(); return; }
     if (mod || e.altKey) return;
     // letter case from Shift alone, so Caps Lock can't turn a/r into accept/reject-all
     const k = e.key.length === 1 ? (e.shiftKey ? e.key.toUpperCase() : e.key.toLowerCase()) : e.key;
@@ -4728,7 +4953,13 @@ function wire() {
       }
       case 'l': case 'L': togglePanel(); break;
       case 'e': leaveResults(); break;
-      case 'm': case 'M': setPreset(presetOf() === 'meaning' ? 'default' : 'meaning'); toast(presetOf() === 'meaning' ? 'Showing: Meaning only' : 'Showing: Default', { key: 'filter' }); break;
+      case 'm': case 'M': {
+        // "Meaning only", and back to the filters that were in use before it (Default when there were none)
+        if (presetOf() !== 'meaning') setPreset('meaning'); else { S.hidden = Object.assign({}, st.lastFilter || presetHidden('default')); save(); applyFilters(); }
+        const p = PRESETS.find(x => x[0] === presetOf());
+        toast('Showing: ' + (p ? p[1] : 'your own choice of categories'), { key: 'filter' });
+        break;
+      }
       case '?': openHelp(); break;
       default: return;
     }
@@ -4738,7 +4969,7 @@ function wire() {
 
 /* ---------- boot ---------- */
 hydrate();
-applyTheme(); applyType();
+applyTheme(); applyType(); applyKeys();
 if (isMac) $('#cmpKey').textContent = '⌘ ↵';
 wire();
 try { history.replaceState({ diffy: 'compose' }, ''); } catch (e) { /* sandboxed: fine */ }

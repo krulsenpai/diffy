@@ -2,6 +2,22 @@
 
 Diffy cannot check for updates, so this page is where you find out what changed. Press `?` inside Diffy to see which version you have.
 
+## 1.0.7
+
+Fixes from two stress tests and two close reviews of the code. One new setting; nothing else to learn.
+
+- **Old text files open right.** A file saved by an older Windows program could open with its accents turned into Russian letters: "Café" became "Cafй", and "€5" became "Ђ5". Western text now opens as it was written, and so do old Turkish, Polish and other Central European, Greek, Hebrew, Arabic and Russian files. A file with a few broken characters keeps the rest of its text as it was.
+- **A new document starts a new review.** Put another text in either box (open a file, paste, load the example, clear a box), switch one of the three comparison settings, or press Swap, and your accept and reject decisions are cleared. Ctrl+Z, or the Undo button in the message that says so, brings back the texts, the setting and every decision. Before, a decision could carry over into a different document that shared a sentence with the last one, and rejecting one word of a moved paragraph, then switching off "Detect moved text", could drop the whole paragraph from the final text. Editing a text by typing still keeps your decisions, and each one stays with the change you made it on, even when the same change appears elsewhere in the text.
+- **A name spelled one letter differently is flagged.** "Philip" → "Phillip" was taken for a typo fix. It is a changed name, also after "by" or "said": "Signed by Philip". A term a contract defines is still put right as a spelling fix: "the Tennant" → "the Tenant".
+- **Two parties that change places are flagged** when they are written in small letters too: "the employer pays the employee" turned into "the employee pays the employer".
+- **German.** German gives every noun a capital, and Diffy took those nouns for names. Now a name needs a capital word beside it, as in "Herr Müller" or "Anna Schmidt". A unit such as "5 Meter" is part of its figure, and "ß" written as "ss" is a spelling.
+- **Fewer false flags.** "9 AM" → "9 PM" and "5 GB" → "5 TB" are a changed figure, not a changed name too. "On Fridays" → "on Thursdays" is a changed day, not a changed name. An emoji such as a family, or the flag of England, Scotland or Wales, changes as a whole, with no "hidden character" badges inside it. A line break copied from Word or a PDF reads as a line break.
+- **Clearer descriptions.** "first" → "second" now reads that way, not "Added 'second'", and so does "Clause 8" → "Clause 9". "It's" → "It is" is one change, a contraction: you can no longer end up with "It's is". Bold turned into italics shows the word, "\*\*very\*\*" → "\*very\*".
+- **Accept shown and Reject shown** now say how many changes hidden by your filters are still undecided.
+- **Keyboard.** After Compare, Page Down, Space and the arrow keys scroll the text. A new setting switches off the one-key shortcuts (J, K, A, R and the rest), for people who use speech input. M goes back to the filters you had, not to Default. Hiding changes with the filters no longer loses your place.
+- **The Rewrite threshold setting is gone.** It did nothing in most texts.
+- **Smaller things.** The review panel shows how many changes you have reviewed once, in its ring, instead of twice. Printing leaves out the outline of the selected change. On a phone, Settings no longer squeezes its descriptions, and messages no longer cover the buttons. A long web address no longer runs out of its card. "100% similar" no longer shows next to a flagged change. Screen readers no longer announce changes your filters hide, and the results have a heading for them.
+
 ## 1.0.6
 
 Exports you can rely on, and a truer reading of text that changed places. There is nothing new to learn.

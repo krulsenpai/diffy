@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { html, script, cspHash, scriptHash, Engine as E, EX_A, EX_B, random, readFile, zip } from './diffy.mjs';
+import { html, script, cspHash, scriptHash, Engine as E, EX_A, EX_B, random, readFile, zip, decisions } from './diffy.mjs';
 
 const file = name => readFileSync(new URL('../' + name, import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 
@@ -80,9 +80,6 @@ const PAIRS = [
   ['no final newline', 'One line', 'One line, changed'],
   ['spacing only', 'Same text.  Twice.\n', 'Same text. Twice.\n\n'],
   ['leading blank lines', '\n\n  Indented start. More.\n', 'Indented start. More!\n'],
-  ['Windows line endings', 'First line.\r\nSecond line.\r\n\r\nNew paragraph.\r\n', 'First line.\r\nSecond line, edited.\r\n\r\nNew paragraph.\r\n'],
-  ['line endings changed', 'First line.\r\nSecond line.\r\n', 'First line.\nSecond line.\n'],
-  ['byte-order mark added', 'Plain start.\n', '\uFEFFPlain start.\n'],
   ['paragraph split', 'One sentence here. Another sentence there.\n', 'One sentence here.\n\nAnother sentence there.\n'],
   ['paragraph merged', 'One sentence here.\n\nAnother sentence there.\n', 'One sentence here. Another sentence there.\n'],
   ['paragraph moved', 'Alpha paragraph stays first.\n\nBravo paragraph will travel down.\n\nCharlie paragraph stays put.\n\nDelta ends it.\n', 'Alpha paragraph stays first.\n\nCharlie paragraph stays put.\n\nDelta ends it.\n\nBravo paragraph will travel down.\n'],
@@ -91,7 +88,7 @@ const PAIRS = [
   ['hidden characters', 'Pay to paypal.com today.\n', 'Pay to p\u0430ypal.com to\u200Bday.\n'],
   ['wrapped email', 'This line of an email\nis hard wrapped at some\ncolumn width. It goes on.\n\nSecond paragraph.\n', 'This line of an email is hard wrapped\nat some other column width. It goes on.\n\nSecond paragraph.\n'],
 ];
-const OPTIONS = [{}, { markdown: false }, { paraMode: 'line' }, { paraMode: 'blank' }, { moves: false }, { threshold: 0.3 }, { threshold: 0.6 }];
+const OPTIONS = [{}, { markdown: false }, { paraMode: 'line' }, { paraMode: 'blank' }, { moves: false }];
 
 for (const [name, a, b] of PAIRS) {
   test('round trip: ' + name, () => {
@@ -105,8 +102,9 @@ for (const [name, a, b] of PAIRS) {
 }
 
 /* ---------- the same, on a few thousand random edits ---------- */
+const pair = name => PAIRS.find(p => p[0] === name)[1];
 const BASES = [
-  EX_A, EX_B, PAIRS[13][1], PAIRS[14][1], PAIRS[16][1],
+  EX_A, EX_B, pair('Markdown'), pair('Japanese'), pair('wrapped email'),
   '\n\n  Leading blank lines.  Double  spaces\tand tabs.\nSecond line here.\n\nLast line without newline',
   'He said "no." She didn\'t agree; it\'s not allowed... Is it? Yes! Mr. Smith arrived at 5 p.m. on Jan. 3.\n',
 ];
@@ -127,13 +125,10 @@ function mutate(s, rnd) {
   }
   return parts.join('');
 }
-// One line-ending style per text: a text that mixes them is normalised to its commonest one, by design.
 function randomPair(rnd) {
   const base = rnd.pick(BASES);
   let a = rnd() < 0.3 ? mutate(base, rnd) : base, b = mutate(rnd() < 0.2 ? rnd.pick(BASES) : a, rnd);
-  if (rnd() < 0.15) a = a.replace(/\n/g, '\r\n');
-  if (rnd() < 0.15) b = b.replace(/\n/g, '\r\n');
-  const opt = { markdown: rnd() < 0.7, paraMode: rnd.pick(['auto', 'auto', 'blank', 'line']), moves: rnd() < 0.8, threshold: rnd.pick([0.3, 0.45, 0.6]) };
+  const opt = { markdown: rnd() < 0.7, paraMode: rnd.pick(['auto', 'auto', 'blank', 'line']), moves: rnd() < 0.8 };
   return { a, b, opt };
 }
 
@@ -720,7 +715,7 @@ test('CriticMarkup: taking every suggestion gives the Final text, refusing them 
     const { a, b, opt } = randomPair(rnd), M = E.compare(a, b, opt), dec = new Map();
     if (run % 3) for (const id of M.order) { const r = rnd(); if (r < 0.3) dec.set(id, 'acc'); else if (r < 0.6) dec.set(id, 'rej'); }
     if (M.critic) continue; // the drafts already hold CriticMarkup symbols
-    const d = h => dec.get(h.id) || null, open = h => !d(h) && !h.layout && !h.meta;
+    const d = h => dec.get(h.id) || null, open = h => !d(h) && !h.layout;
     const cm = E.critic(M, d), where = 'run ' + run + '\n' + cm;
     assert.equal(take(cm, true), E.merge(M, h => d(h) ? d(h) === 'acc' : true, true), where);
     assert.equal(take(cm, false), E.merge(M, h => d(h) ? d(h) === 'acc' : !open(h), true), where);
@@ -1005,4 +1000,356 @@ test('paragraphs taken out and unrelated ones put in come as two blocks, not one
   const pay = 'We pay monthly, on the last working day of the month.', notice = 'Either party may end this agreement by giving thirty days of notice.';
   const R = E.compare(P(['Scope', 'Payment', pay, 'Notice', notice, out[0], ends[1]]), P(['Scope', 'Notice', notice, 'Payment', pay, put[0], ends[1]]), {});
   assert.deepEqual(R.order.map(id => label(R.hunks[id]) + ': ' + (E.textOf(R.B, R.hunks[id].b, 0) || E.textOf(R.A, R.hunks[id].a, 0))), ['Paragraph moved: Payment ¶ ' + pay, 'Paragraph removed: ' + out[0], 'Paragraph added: ' + put[0]]);
+});
+
+/* ---------- found by a stress test of 1.0.6 ---------- */
+test('a name respelled by one letter is still a changed name', () => {
+  // a doubled letter or an ie/ei swap is how names differ, so for a name it is no proof of a typo
+  for (const [a, b] of [['Philip', 'Phillip'], ['Neil', 'Niel'], ['Matthew', 'Mathew']])
+    assert.deepEqual(read('The lease is signed by ' + a + ' Carter today.', 'The lease is signed by ' + b + ' Carter today.'), ['Look-alike word [name, lookalike]'], a + ' → ' + b);
+  // a well-known misspelling put right is a spelling fix, in a name or not
+  assert.deepEqual(read('The Comittee met today.', 'The Committee met today.'), ['Spelling']);
+  assert.deepEqual(read('The comittee recieved it.', 'The committee received it.'), ['Spelling', 'Spelling']);
+  // a term a contract defines has one spelling: a letter put right in it is a spelling fix
+  for (const [a, b] of [['The Tennant shall pay.', 'The Tenant shall pay.'], ['This Agreemment ends.', 'This Agreement ends.'], ['Each Partyy signs.', 'Each Party signs.'], ['Notice to the “Landlordd” today.', 'Notice to the “Landlord” today.']])
+    assert.deepEqual(read(a, b), ['Spelling'], a);
+});
+
+test('the unit or the currency of a figure is no name', () => {
+  assert.deepEqual(flagsOf('The call is at 9 AM on the day.', 'The call is at 9 PM on the day.'), ['number: “9 AM” → “9 PM”']);
+  assert.deepEqual(flagsOf('The plan gives you 5 GB of storage.', 'The plan gives you 5 TB of storage.'), ['number: “5 GB” → “5 TB”']);
+  assert.deepEqual(flagsOf('The fee is USD 500 per year.', 'The fee is EUR 500 per year.'), ['number: “USD 500 per year” → “EUR 500 per year”']);
+  assert.deepEqual(flagsOf('The signal is 5 Hz today.', 'The signal is 5 kHz today.'), ['number: “5 Hz” → “5 kHz”']);
+});
+
+test('an emoji changes as a whole: its joiners and colour marks are no hidden characters', () => {
+  const ZWJ = chr(0x200D), family = last => chr(0x1F468) + ZWJ + chr(0x1F469) + ZWJ + chr(last);
+  const M = E.compare('Our ' + family(0x1F467) + ' went home.\n', 'Our ' + family(0x1F466) + ' went home.\n', {});
+  assert.deepEqual(labels(M), ['Emoji changed [tone]']);
+  assert.ok(!/class="ctl"/.test(E.renderUnified(M, {})), 'no badge inside the emoji');
+  assert.deepEqual(read('I ' + chr(0x2764, 0xFE0F) + ' it.', 'I ' + chr(0x1F44D) + ' it.'), ['Emoji changed [tone]']);
+  // a hidden character between two emoji is still one
+  assert.deepEqual(read('Our ' + chr(0x1F468, 0x1F469) + ' went.', 'Our ' + chr(0x1F468, 0x200B, 0x1F469) + ' went.'), ['Hidden character added [lookalike]']);
+});
+
+test('"one" and "first" are figures where the other side has a figure', () => {
+  assert.deepEqual(flagsOf('He came first in the race.', 'He came second in the race.'), ['number: “first” → “second”']);
+  assert.deepEqual(flagsOf('We need one copy of it.', 'We need two copies of it.'), ['number: “one” → “two”']);
+  // and still no figure where the other side has none
+  assert.deepEqual(read('We suggest you think about it.', 'We suggest you first think about it.'), ['Added']);
+  assert.deepEqual(read('He came first.', 'He came 1st.'), ['Number format']);
+});
+
+test('a text file in an old encoding is read in the right alphabet', async () => {
+  // (These use Node's decoders. A browser's can differ for bytes no real text holds, so a change to how encodings are
+  // told apart is worth a check in a browser too.)
+  // Windows-1252 is the Western one and Windows-1251 the Cyrillic one: the same bytes stand for other letters
+  const W = { '€': 0x80, '’': 0x92, '“': 0x93, '”': 0x94, '—': 0x97 };
+  const western = s => Uint8Array.from(Array.from(s, c => c.codePointAt(0) < 0x100 ? c.codePointAt(0) : W[c]));
+  const cyrillic = s => Uint8Array.from(Array.from(s, c => { const n = c.codePointAt(0); return n < 0x80 ? n : n >= 0x410 && n <= 0x44F ? 0xC0 + n - 0x410 : W[c]; }));
+  for (const s of ['Café naïve résumé — “smart” costs €5.', 'It costs €5 today.', 'He said “hello” — that’s fine.', 'Le café est à côté de la gare, près du marché.', 'Größe: 5 × 3 m, Übergabe am Montag.',
+    // an apostrophe and the letter after it are also one Chinese or Korean character: "It’s" is not "It抯"
+    'It’s fine, don’t worry.', 'We’re sure it’s done.', 'I’m here and you’ll see.'])
+    assert.equal(await readFile('western.txt', western(s)), s);
+  for (const s of ['Привет, мир. Это проверка текста.', 'Договор вступает в силу — “сегодня”.'])
+    assert.equal(await readFile('cyrillic.txt', cyrillic(s)), s);
+  // short Japanese read as Western can look like words ("ƒJƒ^"): Japanese is tried first
+  assert.equal(await readFile('japanese.txt', Uint8Array.from([0x83, 0x4A, 0x83, 0x5E, 0x83, 0x4A, 0x83, 0x69])), 'カタカナ');
+  // Japanese, Chinese and Korean share their bytes, and a Latin word may stand right beside their characters
+  for (const [s, hex] of [
+    ['このファイルはDiffyで開きます。', '82b182cc837483408343838b82cd446966667982c58a4a82ab82dc82b78142'], // Shift_JIS
+    ['日本語の文章です。', 'c6fccbdcb8eca4cecab8becfa4c7a4b9a1a3'], // EUC-JP
+    ['这是一个测试。', 'd5e2cac7d2bbb8f6b2e2cad4a1a3'], // GB2312
+    ['這是一個測試。', 'b36fac4fa440add3b4fab8d5a143'], // Big5
+    ['我用iPhone拍照。', 'ced2d3c36950686f6e65c5c4d5d5a1a3'], // GB2312
+    ['안녕하세요. 반갑습니다.', 'bec8b3e7c7cfbcbcbfe42e20b9ddb0a9bdc0b4cfb4d92e'], // EUC-KR
+    ['Diffy는 무료입니다.', '4469666679b4c220b9abb7e1c0d4b4cfb4d92e'], // EUC-KR
+  ]) assert.equal(await readFile('cjk.txt', Uint8Array.from(Buffer.from(hex, 'hex'))), s);
+});
+
+test('Turkish, Central European, Greek, Hebrew, Arabic and both Russian encodings are told apart', async () => {
+  // an encoder for a one-byte encoding, made from Node's decoder
+  const encoder = enc => { const m = new Map(); for (let b = 0; b < 256; b++) try { m.set(new TextDecoder(enc, { fatal: true }).decode(Uint8Array.of(b)), b); } catch (e) { /* no character */ } return s => Uint8Array.from(Array.from(s, c => m.get(c))); };
+  for (const [enc, s] of [
+    ['windows-1254', 'Şişli’de oturan Ayşe, İstanbul’daki sözleşmeyi imzaladı. Ödeme ağustosta yapılacak.'],
+    ['windows-1254', 'Kiracı, kira bedelini her ayın beşinde öder.'],
+    ['windows-1250', 'Wynajmujący zobowiązuje się płacić czynsz w złotych. Łódź, środa.'],
+    ['windows-1253', 'Καλημέρα σας. Η σύμβαση υπογράφεται σήμερα στην Αθήνα.'],
+    ['windows-1255', 'שלום עולם. החוזה נחתם היום בתל אביב.'],
+    ['windows-1256', 'مرحبا بالعالم. تم توقيع العقد اليوم في القاهرة.'],
+    ['windows-1251', 'Ще не вмерла України і слава, і воля.'],
+    ['koi8-r', 'Привет, мир. Договор вступает в силу сегодня.'],
+    ['koi8-r', 'съешь же ещё этих мягких французских булок'],
+    // a few Russian words in small letters, which also make Greek, Hebrew or Arabic letters in those encodings
+    ['windows-1251', 'привет мир'], ['windows-1251', 'договор аренды квартиры подписан сегодня'], ['koi8-r', 'привет мир, как дела'],
+    // and Western stays Western, Icelandic too
+    ['windows-1252', 'Það er gott að vera hér, sæll og blessaður.'],
+    ['windows-1252', 'Größe: 5 m², Übergabe am Montag. Die Straße ist schön.'],
+  ]) assert.equal(await readFile('old.txt', encoder(enc)(s)), s, enc);
+  // UTF-8 with one stray byte from an old Windows program is still UTF-8, with that byte lost
+  const u = new TextEncoder().encode('Sözleşme taraflarının imzası ile yürürlüğe girer. ');
+  assert.equal(await readFile('mixed.txt', Uint8Array.from([...u, 0x92, ...u])), 'Sözleşme taraflarının imzası ile yürürlüğe girer. �Sözleşme taraflarının imzası ile yürürlüğe girer. ');
+});
+
+test('a file read has plain line endings, as text in a box has', async () => {
+  // (the comparison is only ever given the boxes' text, which a browser always gives with plain line endings)
+  for (const s of ['First line.\r\nSecond line.\r\n', 'First line.\rSecond line.\r', '\uFEFFFirst line.\r\nSecond line.\n'])
+    assert.equal(await readFile('lines.txt', new TextEncoder().encode(s)), 'First line.\nSecond line.\n', JSON.stringify(s));
+});
+
+test('a change the filters hide is drawn as plain text', () => {
+  const M = E.compare('He said "wait" twice.\n', 'He said “wait” twice.\n', {});
+  const html = E.renderUnified(M, { hidden: () => true });
+  assert.ok(!/<(ins|del)\b/.test(html) && /class="h [^"]*\boff\b/.test(html), html);
+  assert.match(E.renderUnified(M, {}), /<ins\b/);
+});
+
+test('a hidden character in front of a clause number does not hide it', () => {
+  const nums = opt => E._t.parseDoc(chr(0xFEFF) + '1. Alpha clause here.\n\n2. Beta clause here.\n', opt).toks.filter(t => t.lbl).map(t => t.t);
+  assert.deepEqual(nums({ markdown: true }), ['1.', '2.']); // a Markdown list number
+  assert.deepEqual(nums({ markdown: false }), ['1', '2']);
+});
+
+/* ---------- found by a stress test of 1.0.7, in the browser ---------- */
+test('a weekday, a German noun or a line separator is no name', () => {
+  // (a plural weekday is a day, as a singular one is: see the test of plural weekdays below)
+  assert.deepEqual(flagsOf('The shop in Leeds opens at 9 on Saturdays.', 'On Saturdays, the shop in York opens at 9.').filter(f => f.startsWith('name')), ['name: “Leeds” → “York”']);
+  // German writes its nouns with a capital: a noun is no name there, a name beside a title or a first name still is
+  assert.deepEqual(read('Die Wohnung hat einen Balkon und die Heizung ist neu.', 'Die Wohnung hat eine Terrasse und die Heitzung ist neu.').filter(l => /name/.test(l)), []);
+  assert.deepEqual(read('Die Wohnung liegt in der Straße am Park.', 'Die Wohnung liegt in der Strasse am Park.'), ['ß or ss']);
+  assert.deepEqual(flagsOf('Der Vertrag wird von Herr Müller unterschrieben.', 'Der Vertrag wird von Herr Möller unterschrieben.').filter(f => f.startsWith('name')), ['name: “Müller” → “Möller”']);
+  // a line separator (U+2028) ends a line as a line break does
+  assert.deepEqual(read('Dear Anna,' + chr(0x2028) + 'Thanks for the note.', 'Dear Anna,\nThanks for the note.'), ['Line breaks & blank lines']);
+});
+
+test('a name after "by", "said" or "that" is still a name', () => {
+  for (const [a, b] of [['Signed by Philip.', 'Signed by Phillip.'], ['Signed by Philip', 'Signed by Phillip'], ['Witnessed by Catherine.', 'Witnessed by Katherine.'], ['“Yes,” said Philip Carter.', '“Yes,” said Phillip Carter.'], ['He knew that Philip Carter left.', 'He knew that Phillip Carter left.'], ['The Philip Carter Trust pays.', 'The Phillip Carter Trust pays.']])
+    assert.deepEqual(read(a, b), ['Look-alike word [name, lookalike]'], a);
+});
+
+test('two parties that change places are flagged in small letters too', () => {
+  assert.deepEqual(flagsOf('The employer pays the employee monthly.', 'The employee pays the employer monthly.'), ['name: Changed places: “employer”, “employee” → “employee”, “employer”']);
+  assert.deepEqual(read('The quick brown fox jumps.', 'The brown quick fox jumps.'), ['Word order']);
+});
+
+test('a clause number replaced by another reads as one figure for another', () => {
+  const M = E.compare('Clause 7. Rent is due.\n\nClause 8. The tenant pays.\n', 'Clause 7. Rent is due.\n\nClause 9. The tenant pays.\n', {});
+  assert.deepEqual(M.order.flatMap(id => M.hunks[id].finfo.map(f => f[1])), ['“8” → “9”']);
+});
+
+/* ---------- found by a code review of 1.0.7 ---------- */
+test('German is told by its own words, and its small words, units and currencies name no one', () => {
+  // "des", "das", "den", "der" and "die" are words of French, Portuguese, Danish and Dutch too: a name there is still a name
+  for (const [a, x, y] of [
+    ['Le contrat des deux parties est signé par Marie. Les frais des avocats et des notaires sont partagés.', 'Marie', 'Sophie'],
+    ['O contrato das partes foi assinado por Maria. As taxas das partes e das custas são divididas.', 'Maria', 'Ana'],
+    ['Aftalen blev underskrevet af Anna den første dag. Der er tre parter, og den sidste er glad for mit forslag.', 'Anna', 'Karen'],
+    ['Die overeenkomst werd door Anna getekend. Die partijen werden het eens over den prijs.', 'Anna', 'Eva'],
+    // (a contract may give its defined terms a capital after the article)
+    ['O contrato das Partes foi assinado por Maria. Os direitos das Partes e as custas das Partes são claros.', 'Maria', 'Ana'],
+    ['Le contrat des Parties est signé par Marie. Les droits des Parties et les frais des Parties sont partagés.', 'Marie', 'Sophie'],
+  ]) assert.deepEqual(read(a, a.replace(x, y)), ['Reworded [name]'], a);
+  // German: a noun after "Diese", "Ihre", "Sie" or "zur" is no name, nor in one short sentence with its articles alone
+  for (const [a, x, y] of [
+    ['Diese Wohnung ist neu und warm. Der Mieter ist zufrieden und zahlt pünktlich.', 'Wohnung', 'Heizung'],
+    ['Wir danken für Ihre Zahlung und die Kaution. Sie ist eingegangen.', 'Zahlung', 'Überweisung'],
+    ['Haben Sie Fragen zur Kündigung? Wir helfen gern.', 'Kündigung', 'Miete'],
+    ['Der Mieter zahlt die Miete.', 'Miete', 'Kaution'],
+  ]) assert.deepEqual(read(a, a.replace(x, y)), ['Reworded'], a);
+  assert.deepEqual(flagsOf('Der Mieter zahlt 500 Euro Kaution und die Miete pünktlich.', 'Der Mieter zahlt 500 Dollar Kaution und die Miete pünktlich.'), ['number: “500 Euro” → “500 Dollar”']);
+  assert.deepEqual(flagsOf('Der Tarif hat 5 GB Speicher und ist auch günstig.', 'Der Tarif hat 5 TB Speicher und ist auch günstig.'), ['number: “5 GB” → “5 TB”']);
+});
+
+test('a plural weekday is a day, "Mars" is no month, and a line that opens "Owned by" names someone', () => {
+  assert.deepEqual(flagsOf('The shop is open on Fridays.', 'The shop is open on Thursdays.'), ['number: “Fridays” → “Thursdays”']);
+  assert.deepEqual(flagsOf('The probe landed on Mars last year.', 'The probe landed on the moon last year.'), ['name: Removed “Mars”']);
+  assert.deepEqual(flagsOf('The boat is ours.\n\nOwned by Jon', 'The boat is ours.\n\nOwned by John'), ['name: “Jon” → “John”']);
+  // a heading may hold a "by" too
+  assert.deepEqual(read('Termination by Notice\n\nEither party may end this agreement.', 'Termination by Agreement\n\nEither party may end this agreement.'), ['Reworded']);
+});
+
+/* ---------- found by a code review and a stress test of round 4 of 1.0.7 ---------- */
+test('Polish, Slovak, Afrikaans and Dutch are no German: a name there keeps its flag', () => {
+  // "ich" is Polish and Slovak too; Afrikaans has "die" alone, with capitals for its defined terms; a Dutch name holds a "der"
+  for (const [a, x, y] of [
+    ['Umowa dla ich rodziny została podpisana przez Annę. Ich dzieci mieszkają tutaj.', 'Annę', 'Martę'],
+    ['Zmluvu pre ich rodinu podpísal Peter. Ich deti tu bývajú.', 'Peter', 'Martin'],
+    ['Die Huurder betaal die Huur aan die Verhuurder. Die Huurder is Johan.', 'Johan', 'Pieter'],
+    ['Het contract is getekend door Van der Berg en Van der Meer. Die afspraak geldt voor Anna.', 'Anna', 'Eva'],
+  ]) assert.deepEqual(read(a, a.replace(x, y)), ['Reworded [name]'], a);
+});
+
+test('German: a unit keeps its capital, and words in capitals or in a Title Case label are no names', () => {
+  assert.deepEqual(flagsOf('Der Garten hat 5 Meter Zaun und ist schön.', 'Der Garten hat 5 Kilometer Zaun und ist schön.'), ['number: “5 Meter” → “5 Kilometer”']);
+  assert.deepEqual(flagsOf('Der Tank fasst 50 Liter Wasser und ist neu.', 'Der Tank fasst 60 Liter Wasser und ist neu.'), ['number: “50 Liter” → “60 Liter”']);
+  assert.deepEqual(read('Der Vertrag WIRD gekündigt, wenn die Miete nicht gezahlt wird.', 'Der Vertrag WURDE gekündigt, wenn die Miete nicht gezahlt wird.'), ['Reworded']);
+  assert.deepEqual(read('MIETVERTRAG FÜR WOHNRAUM\n\nDer Mieter zahlt die Miete und ist zufrieden.', 'MIETVERTRAG FÜR GEWERBERAUM\n\nDer Mieter zahlt die Miete und ist zufrieden.'), ['Reworded']);
+  assert.deepEqual(read('Monatliche Miete: 500 Euro. Der Mieter zahlt pünktlich und ist zufrieden.', 'Jährliche Miete: 500 Euro. Der Mieter zahlt pünktlich und ist zufrieden.'), ['Reworded']);
+  // what a label introduces still names someone
+  assert.deepEqual(flagsOf('Vermieter: Anna Schmidt. Der Mieter zahlt die Miete und ist zufrieden.', 'Vermieter: Anna Meier. Der Mieter zahlt die Miete und ist zufrieden.'), ['name: “Schmidt” → “Meier”']);
+});
+
+test('a contraction written out is one change, not a form of a word and a word added', () => {
+  // deciding "It's → It" and "Added is" apart gave "It's is" or "It done"
+  const M = E.compare('It\'s done and the work is over.\n', 'It is done and the work is over.\n', {});
+  assert.deepEqual(labels(M), ['Contraction']);
+  assert.deepEqual(read('We know he\'s here today.', 'We know he is here today.'), ['Contraction']);
+  // a possessive is still a form of its word
+  assert.deepEqual(read('The Buyer signs it today.', 'The Buyer\'s agent signs it today.'), ['Word form', 'Added']);
+});
+
+/* ---------- found by a code review of 1.0.7, after round 5 ---------- */
+test('a pronoun with "\'s" added or taken away is a form of it; "is" written into it is a contraction', () => {
+  assert.deepEqual(read('It is everyone\'s duty.', 'It is everyone duty.'), ['Word form']);
+  assert.deepEqual(read('We know he left.', 'We know he\'s left.'), ['Word form']);
+  assert.deepEqual(read('I know there is time.', 'I know there\'s time.'), ['Contraction']);
+});
+
+test('a unit with a capital is still the unit of its figure', () => {
+  assert.deepEqual(flagsOf('The supply is 50 Hz AC here.', 'The supply is 60 Hz AC here.'), ['number: “50 Hz” → “60 Hz”']);
+  assert.deepEqual(flagsOf('The supply is 50 Hz AC here.', 'The supply is 50 kHz AC here.'), ['number: “50 Hz” → “50 kHz”']);
+  assert.deepEqual(flagsOf('You must give 5 Days Notice to us.', 'You must give 10 Days Notice to us.'), ['number: “5 Days” → “10 Days”']);
+});
+
+test('a unit or a currency with a capital after a figure such as 1500 is its unit too, so changing it keeps its flag', () => {
+  // (a figure that could be a year once lost its unit: "Dollars" → "Euros" had no flag at all, and so was hidden by "Meaning only")
+  assert.deepEqual(flagsOf('The Fee Is 1500 Dollars Per Month.', 'The Fee Is 1500 Euros Per Month.'), ['number: “1500 Dollars Per Month” → “1500 Euros Per Month”']);
+  assert.deepEqual(flagsOf('The link runs at 1000 Mbps today.', 'The link runs at 1000 Gbps today.'), ['number: “1000 Mbps” → “1000 Gbps”']);
+});
+
+test('the flags of England, Scotland and Wales and a picture asked for in plain text are emoji, not hidden characters', () => {
+  const tags = s => Array.from(s, c => chr(0xE0000 + c.charCodeAt(0))).join(''), flag = s => chr(0x1F3F4) + tags(s) + chr(0xE007F);
+  assert.deepEqual(read('Go team!', 'Go team ' + flag('gbeng') + '!'), ['Emoji added [tone]']);
+  assert.deepEqual(read('Go ' + flag('gbeng') + ' now.', 'Go ' + flag('gbsct') + ' now.'), ['Emoji changed [tone]']);
+  assert.deepEqual(read('Thanks', 'Thanks ' + chr(0x263A, 0xFE0E)), ['Emoji added [tone]']);
+  // other tag letters after a black flag can spell words nobody sees: they stay hidden characters
+  assert.deepEqual(read('Go team!', 'Go team ' + flag('ignore') + '!'), ['Hidden character added [lookalike, tone]']);
+});
+
+test('a run of invisible marks after an emoji is reported as hidden characters', () => {
+  // one mark asking for the picture in colour or in plain text belongs to the emoji; more of them are invisible and can carry hidden data
+  const thumb = chr(0x1F44D), tone = chr(0x1F3FD), FE0E = chr(0xFE0E), FE0F = chr(0xFE0F);
+  const hidden = (a, b) => flagsOf('Thanks ' + a + ' a lot.', 'Thanks ' + b + ' a lot.').filter(f => f.startsWith('lookalike: Hidden character added: U+FE0')).length;
+  assert.equal(hidden(thumb, thumb + FE0F + FE0F + FE0F), 1);
+  assert.equal(hidden(thumb + FE0F, thumb + FE0F + FE0E + FE0F + FE0E), 1);
+  assert.equal(hidden(thumb + tone, thumb + tone + FE0F + FE0F), 1);
+  assert.equal(hidden(thumb, thumb + FE0F), 0);
+});
+
+/* ---------- decisions, from one comparison to the next ---------- */
+// (the interface's own functions, cut out of diffy.html: see decisions() in tests/diffy.mjs)
+const MOVED = ['The tenant shall pay the rent on the first day of each month.\n\nThe landlord shall keep the building in good repair at all times.\n\nPets are not allowed in the flat without written consent.\n',
+  'Pets are not allowed in the flat without prior written consent.\n\nThe tenant shall pay the rent on the first day of each month.\n\nThe landlord shall keep the building in good repair at all times.\n'];
+const finalOf = d => E.merge(d.st.M, h => d.st.dec.has(h.id) ? d.st.dec.get(h.id) === 'acc' : true, true);
+const decided = d => [...d.st.dec].map(([id, v]) => label(d.st.M.hunks[id]) + ': ' + v);
+// a comparison setting switched in Settings
+const switchTo = (d, key, value) => { d.S[key] = value; d.onSetting(key); return d.ensureModel(); };
+// what Undo puts back after a fresh start: the texts, the settings, the decisions and the steps Ctrl+Z can undo
+const hist = list => list.map(u => u.state ? 'a fresh start' : u);
+const stateOf = d => JSON.stringify([d.ta.value, d.tb.value, d.S, [...d.st.dec], hist(d.st.undo)]);
+const yours = (n, what) => ' Your ' + n + (n === 1 ? ' decision is ' : ' decisions are ') + what + '.';
+
+test('decisions: one word rejected in a moved paragraph, then "Detect moved text" switched off, leaves the paragraph in', () => {
+  // the paragraph used to be rejected as a whole at its new place, and vanished from the Final text
+  const d = decisions(); d.set(...MOVED); const M = d.ensureModel();
+  d.decide([M.order.find(id => M.hunks[id].kind !== 'move')], 'rej');
+  const before = stateOf(d), final = finalOf(d);
+  switchTo(d, 'moves', false);
+  assert.deepEqual(decided(d), []);
+  assert.match(finalOf(d), /Pets are not allowed in the flat/);
+  assert.equal(d.toasts.at(-1), 'Compared again with the new setting.' + yours(1, 'cleared'));
+  // the message's Undo puts the setting and the decision back
+  d.pressUndo(); d.ensureModel();
+  assert.deepEqual([stateOf(d), finalOf(d), decided(d)], [before, final, ['Added: rej']]);
+});
+
+test('decisions: another text in a box, a comparison setting or Swap starts over, and Undo or Ctrl+Z puts it all back', () => {
+  const a = 'The rent is **10** euros a day.\n\nThe deposit is *one* month.\n', b = 'The rent is **12** euros a day.\n\nThe deposit is *two* months.\n';
+  for (const [what, act, msg] of [
+    ['Read Markdown & HTML', d => switchTo(d, 'markdown', false), 'Compared again with the new setting.'],
+    ['Paragraphs', d => switchTo(d, 'paraMode', 'line'), 'Compared again with the new setting.'],
+    ['Swap', d => { d.swapTexts(); d.ensureModel(); }, 'Swapped.'],
+    ['a file', d => { d.setTexts({ b: 'Another text altogether.\n' }, { b: 'other.txt' }, 'Loaded other.txt'); d.ensureModel(); }, 'Loaded other.txt.'],
+    ['the example', d => { d.setTexts({ a: EX_A, b: EX_B }, {}, 'Loaded the example.'); d.ensureModel(); }, 'Loaded the example.'],
+    ['a box typed over', d => { d.typedOver('a', d.ta.value, 'Replaced'); d.set('Typed anew.\n', d.tb.value); d.ensureModel(); }, 'Replaced the original.'],
+  ]) {
+    const d = decisions(); d.set(a, b); const M = d.ensureModel();
+    for (const id of M.order) d.decide([id], 'rej');
+    d.undo(); // (one step undone)
+    const before = stateOf(d), final = finalOf(d), n = d.st.dec.size;
+    act(d);
+    const after = stateOf(d);
+    assert.deepEqual([d.st.dec.size, hist(d.st.undo), d.st.redo.length], [0, ['a fresh start'], 0], what);
+    assert.equal(d.toasts.at(-1), msg + yours(n, 'cleared'), what);
+    // the message's Undo and Ctrl+Z do the same: everything comes back; and Ctrl+Y starts over again
+    d.pressUndo(); d.ensureModel();
+    assert.equal(d.toasts.at(-1), 'Undone.' + yours(n, 'back'), what);
+    assert.deepEqual([stateOf(d), finalOf(d)], [before, final], what + ': Undo');
+    d.redo(); d.ensureModel(); assert.equal(stateOf(d), after, what + ': Ctrl+Y');
+    d.undo(); d.ensureModel(); assert.deepEqual([stateOf(d), finalOf(d)], [before, final], what + ': Ctrl+Z');
+  }
+});
+
+test('decisions: Ctrl+Z steps back through the decisions made after a fresh start, then past it, and Ctrl+Y forward again', () => {
+  const d = decisions(); d.set(...MOVED); const M = d.ensureModel();
+  d.decide([M.order[0]], 'acc');
+  const before = stateOf(d), N = switchTo(d, 'moves', false);
+  assert.ok(N.order.length >= 2);
+  d.decide([N.order[0]], 'rej'); d.decide([N.order[1]], 'acc');
+  const later = stateOf(d), final = finalOf(d);
+  for (let k = 0; k < 3; k++) d.undo();
+  d.ensureModel(); assert.equal(stateOf(d), before);
+  for (let k = 0; k < 3; k++) d.redo();
+  d.ensureModel(); assert.deepEqual([stateOf(d), finalOf(d)], [later, final]);
+});
+
+test('decisions: a change keeps its decision when a word beside it is edited, and not when its text is replaced', () => {
+  const d = decisions(), a = 'The tenant pays 10 euros each month. The deposit is held by the agent.\n';
+  d.set(a, 'The tenant pays 12 euros each month. The deposit is held by the landlord.\n'); const M = d.ensureModel();
+  for (const id of M.order) d.decide([id], 'rej');
+  d.set(a, 'The tenant pays 12 euro each month. The deposit is held by the landlord.\n'); d.ensureModel();
+  assert.deepEqual(decided(d).filter(x => /: rej$/.test(x)).length, 2);
+  // another text in a box is another document: it starts with no decisions, however much of it reads like the last one
+  d.setTexts({ b: 'The tenant pays 12 euros each week.\n' }, {}, 'Pasted 6 words.'); d.ensureModel();
+  assert.deepEqual(decided(d), []);
+});
+
+test('decisions: a typed edit does not hand a decision to an identical change elsewhere', () => {
+  // known by its words alone, the change left open took the decision of the one that was typed away
+  const d = decisions(), a = 'Pay 10 now.\n\nLater pay 10 again.\n';
+  d.set(a, 'Pay 12 now.\n\nLater pay 12 again.\n'); const M = d.ensureModel();
+  d.decide([M.order[0]], 'rej');
+  d.set(a, 'Pay 10 now.\n\nLater pay 12 again.\n'); d.ensureModel();
+  assert.deepEqual(decided(d), []);
+  assert.equal(d.toasts.at(-1), '1 decision no longer applies: that change is gone or regrouped.');
+});
+
+test('decisions: after a fresh start, Undo or Ctrl+Z puts everything back and Ctrl+Y starts over again, on random edits', () => {
+  const rnd = random(4711), OPTS = [['moves', [true, false]], ['markdown', [true, false]], ['paraMode', ['auto', 'blank', 'line']]];
+  let checked = 0;
+  for (let run = 0; run < 300; run++) {
+    const { a, b } = randomPair(rnd), d = decisions();
+    for (const [k, vs] of OPTS) d.S[k] = rnd.pick(vs);
+    d.set(a, b); const M = d.ensureModel();
+    if (!M.order.length) continue;
+    for (let k = 1 + Math.floor(rnd() * 5); k > 0; k--) d.decide([rnd.pick(M.order)], rnd() < 0.5 ? 'acc' : 'rej');
+    if (rnd() < 0.3) d.undo();
+    if (!d.st.dec.size) continue;
+    const before = stateOf(d), final = finalOf(d), how = rnd.pick(['setting', 'swap', 'text', 'typed']);
+    const where = 'run ' + run + ' (' + how + ')\noriginal: ' + JSON.stringify(a) + '\nrevised:  ' + JSON.stringify(b);
+    if (how === 'setting') { const [key, vals] = rnd.pick(OPTS); switchTo(d, key, rnd.pick(vals.filter(v => v !== d.S[key]))); }
+    else if (how === 'swap') { d.swapTexts(); d.ensureModel(); }
+    else if (how === 'text') { d.setTexts({ [rnd() < 0.5 ? 'a' : 'b']: rnd.pick(BASES) }, {}, 'Pasted.'); d.ensureModel(); }
+    else { d.typedOver('b', d.tb.value, 'Replaced'); d.set(d.ta.value, mutate(d.tb.value, rnd)); d.ensureModel(); }
+    const after = stateOf(d);
+    assert.deepEqual([d.st.dec.size, hist(d.st.undo), d.st.redo.length], [0, ['a fresh start'], 0], where);
+    assert.match(d.toasts.at(-1), / cleared\.$/, where);
+    if (rnd() < 0.5) d.pressUndo(); else d.undo();
+    d.ensureModel();
+    assert.deepEqual([stateOf(d), finalOf(d)], [before, final], where);
+    d.redo(); d.ensureModel(); assert.equal(stateOf(d), after, where);
+    d.undo(); d.ensureModel(); assert.equal(stateOf(d), before, where);
+    checked++;
+  }
+  assert.ok(checked > 150, 'enough runs with decisions (' + checked + ')');
 });
